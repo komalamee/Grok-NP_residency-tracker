@@ -3,6 +3,7 @@ residence for the previous 3 tax years is recorded and every applicable tie is a
 Until then the engine returns what is missing plus a running count, and the dashboard and the
 PDF export show that running count where the stage line would go."""
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -15,6 +16,7 @@ KIT = HERE.parent.parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import srt_engine as E  # noqa: E402
+import dashboard_charts as C  # noqa: E402
 import render_dashboard as RD  # noqa: E402
 import render_pdf as RP  # noqa: E402
 from test_engine import make_log  # noqa: E402
@@ -131,34 +133,131 @@ class RunningCount(unittest.TestCase):
         self.assertEqual(figure(rc, 31)["room"], 26)
         self.assertEqual(figure(rc, 31)["unit"], "UK work days")
 
+    def test_the_nearest_uk_day_figure_ahead_is_the_one_marked_next(self):
+        log = make_log(TY, uk_days=20, uk_work_days=4, ties={"accommodation": "yes"}, fill_to=MID_YEAR)
+        log.profile["tax_years"][TY]["overseas_full_time_work_claimed"] = "yes"
+        ref = E.srt_reference(log, TY, MID_YEAR)
+        nxt = ref["running_count"]["next_figure"]
+        self.assertEqual(nxt["figure"], 91)          # 16 is passed; 91 is nearer than 121 and 183
+        self.assertEqual(nxt["room"], 70)
+        self.assertEqual([f["figure"] for f in ref["applicable_figures"] if f["next"]], [91])
+
+    def test_a_work_day_figure_is_never_the_figure_progress_is_shown_against(self):
+        log = make_log(TY, uk_days=0, uk_work_days=0, fill_to=MID_YEAR)
+        log.profile["tax_years"][TY]["overseas_full_time_work_claimed"] = "yes"
+        ref = E.srt_reference(log, TY, MID_YEAR)     # 31 UK work days is the nearest figure by room, but not in days
+        self.assertEqual(figure(ref["running_count"], 31)["room"], 30)
+        self.assertEqual(ref["running_count"]["next_figure"]["figure"], 16)
+
+    def test_applicable_figures_are_returned_for_a_year_with_a_result_too(self):
+        ref = E.srt_reference(make_log(TY, uk_days=5), TY, YEAR_END)
+        self.assertIsNone(ref["running_count"])
+        self.assertEqual([f["figure"] for f in ref["applicable_figures"]], [16, 183])
+        self.assertEqual([f["figure"] for f in ref["applicable_figures"] if f["next"]], [16])
+
+
+class GateChecklist(unittest.TestCase):
+    """gate_items(): the short labels behind the Reference card's checklist."""
+
+    def labels(self, ref):
+        return [(i["label"], i["done"]) for i in ref["gate"]]
+
+    def test_mid_year_partial_log(self):
+        log = make_log(TY, uk_days=5, ties={"family": "not_answered", "work": "unsure"}, fill_to=date(2026, 9, 20))
+        ref = E.srt_reference(log, TY, MID_YEAR)
+        self.assertEqual(self.labels(ref), [("Tax year ends 5 Apr 2027", False), ("7 days to log", False),
+                                            ("Previous 3 years recorded", True), ("2 ties to answer", False)])
+
+    def test_complete_year_is_all_ticks(self):
+        ref = E.srt_reference(make_log(TY, uk_days=5), TY, YEAR_END)
+        self.assertEqual(self.labels(ref), [("Tax year ended", True), ("Every day logged", True),
+                                            ("Previous 3 years recorded", True), ("Ties answered", True)])
+
+    def test_labels_and_reasons_stay_in_step(self):
+        ref = E.srt_reference(make_log(TY, uk_days=5, prior_resident="unsure"), TY, YEAR_END)
+        self.assertEqual([i["detail"] for i in ref["gate"] if not i["done"]], ref["verdict_withheld"])
+        self.assertIn(("Previous 3 years to record", False), self.labels(ref))
+
+
+class ReferenceVisual(unittest.TestCase):
+    """The gauge and the day strip the Reference card is built from."""
+
+    def test_gauge_fills_to_the_count_and_ticks_the_figures(self):
+        g = C.gauge(5, 16, [(183, "first automatic UK test")], width=660)
+        self.assertIn("aria-label='5 UK midnights against the 16-day figure'", g)
+        self.assertIn(">16</text>", g)
+        self.assertNotIn(">183</text>", g)  # outside the scale: it belongs in the detail, not on the bar
+
+    def test_day_strip_marks_uk_days_and_gaps(self):
+        log = make_log(TY, uk_days=5, fill_to=date(2026, 5, 5))   # 30 days logged, 5 of them UK
+        start, end = E.tax_year_bounds(TY)
+        strip = C.day_strip(log, start, end, today=MID_YEAR)
+        self.assertIn("30 logged", strip)
+        self.assertIn(f"fill='{C.CORAL}'", strip)   # the UK run
+        self.assertIn(f"fill='{C.AMBER}'", strip)   # the unlogged run
+
+    def test_day_strip_leaves_the_days_to_come_empty(self):
+        log = make_log(TY, uk_days=5, fill_to=date(2026, 5, 5))
+        start, end = E.tax_year_bounds(TY)
+        filled = lambda strip: sum(float(w) for w in re.findall(r"width='([\d.]+)' height='16' fill=", strip))
+        whole_year = filled(C.day_strip(log, start, end))
+        to_date = filled(C.day_strip(log, start, end, today=MID_YEAR))
+        self.assertAlmostEqual(whole_year, 658, delta=1)
+        self.assertAlmostEqual(to_date / whole_year, 175 / 365, delta=0.02)   # 6 Apr to 27 Sep
+
 
 class Outputs(unittest.TestCase):
-    """Dashboard and PDF export: the running line where the stage line would be, and no verdict."""
+    """Dashboard and PDF export: one visual read, a checklist, and no verdict until the gate opens."""
 
     def setUp(self):
         self.mid = make_log(TY, uk_days=5, fill_to=MID_YEAR)
         self.done = make_log(TY, uk_days=5)
 
-    def test_dashboard_shows_the_running_line_mid_year(self):
+    def check_visual(self, html, count, figure):
+        self.assertIn("class='refnum'", html)
+        self.assertIn(f"aria-label='{count} UK midnights against the {figure}-day figure'", html)
+        self.assertIn("Every day from 6 Apr 2026 to 5 Apr 2027", html)   # the day strip
+        self.assertIn("A count from your entries. It does not determine residence.", html)
+
+    def test_dashboard_mid_year_is_a_count_a_chip_and_a_checklist(self):
         h = RD.render(self.mid, MID_YEAR, [])
-        self.assertIn("Your log so far: 5 UK midnights from 6 Apr 2026 to 27 Sep 2026", h)
-        self.assertIn("still to record: the tax year is still running", h)
-        self.assertIn("10 UK days of room before 16", h)
+        self.check_visual(h, 5, 16)
+        self.assertIn("10 days left before 16", h)
+        self.assertIn("No result for 2026/27 yet", h)
+        self.assertIn("Tax year ends 5 Apr 2027", h)
+        self.assertIn("Every box is ticked before a result is given.", h)
         self.assertNotIn(POINTS_TO, h)
+        self.assertNotIn("Your log so far:", h)   # the long running sentence stays in the engine output
+
+    def test_dashboard_folds_the_figure_detail_away(self):
+        h = RD.render(self.mid, MID_YEAR, [])
+        detail = h.split("<details><summary>Figures and sources</summary>", 1)[1].split("</details>", 1)[0]
+        self.assertIn("10 UK days of room before 16: first automatic overseas test", detail)
+        self.assertIn("RFIG20120 (updated", detail)
+        self.assertIn("183: first automatic UK test", detail)
 
     def test_dashboard_shows_the_stage_line_for_a_finished_year(self):
         h = RD.render(self.done, YEAR_END, [])
+        self.check_visual(h, 5, 16)
         self.assertIn(POINTS_TO + " under the first automatic overseas test", h)
-        self.assertNotIn("Your log so far:", h)
+        self.assertIn("Not tax advice \u2014 always check your own position. Source: RFIG20120", h)
+        self.assertIn("Every day logged", h)
+        self.assertNotIn("No result for", h)
+        self.assertNotIn("class='todo'", h)
 
-    def test_pdf_export_shows_the_running_line_mid_year(self):
+    def test_pdf_export_mid_year_matches_the_dashboard(self):
         html, _ = RP.build_html(self.mid, TY, MID_YEAR)
-        self.assertIn("Your log so far: 5 UK midnights from 6 Apr 2026 to 27 Sep 2026", html)
-        self.assertIn("It does not determine residence.", html)
+        self.check_visual(html, 5, 16)
+        self.assertIn("10 days left before 16", html)
+        self.assertIn("No result for 2026/27 yet", html)
+        self.assertIn("<div class='fine'><b>Figures and sources</b>", html)
+        self.assertGreater(html.index("10 UK days of room before 16"), html.index("<div class='fine'>"))
         self.assertNotIn(POINTS_TO, html)
+        self.assertNotIn("Your log so far:", html)
 
     def test_pdf_export_shows_the_stage_line_for_a_finished_year(self):
         html, _ = RP.build_html(self.done, TY, YEAR_END)
+        self.check_visual(html, 5, 16)
         self.assertIn(POINTS_TO + " under the first automatic overseas test", html)
         self.assertNotIn("Your log so far:", html)
 
