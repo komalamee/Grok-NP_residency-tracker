@@ -2,6 +2,25 @@
 
 Versions of the Nomad Pro engine (`VERSION`). Newest first.
 
+## 0.1.3
+
+* Reference card, dashboard and export, redesigned around one visual: a progress bar of UK midnights against the
+  nearest HMRC figure that applies, a strip of every day of the tax year (UK midnights, days elsewhere, gaps, days
+  still to come), an "X days left before Y" chip and a four-box checklist of what is still to record. Short labels
+  only; the figure explanations, the room before each figure, the HMRC page dates, the counting notes and the RDR3
+  number line moved into "Figures and sources" (a collapsible block in the dashboard, a footnote in the export).
+  The running-count sentence and the prose list of missing items are no longer shown to the reader; the engine
+  still returns both. Disclaimer wording is unchanged and set small.
+* The export's section 3 is now "Where your log stands, and your ties" and is built from the same component as the
+  dashboard card (`dashboard_charts.status_block`, with `gauge` and `day_strip`), so the two read the same.
+  `render_common.pointer_block` is gone.
+* Engine: `srt_reference()` also returns `gate` (one item per gate condition, each with a short checklist label)
+  and `applicable_figures` (the figures that apply to the year with the room left before each, and `next` on the
+  nearest UK-day figure still ahead), for a year with a result as well as one without. `running_count` keeps its
+  `figures` and gains `next_figure`.
+* New tests: the checklist labels, the figure marked `next` (never a work-day figure), the gauge and the day strip,
+  and the dashboard and export output either side of the verdict gate.
+
 ## 0.1.2
 
 * Verdict gate: `srt_reference()` (and so `summary`, the dashboard, the PDF export and the records pack) returns a

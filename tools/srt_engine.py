@@ -13,7 +13,9 @@ What it computes
     comfortable room / getting close / at the line / over the line.
   * The verdict gate: a stage line ("Your log points to ...") only for a tax year that has ended with every day
     logged, the previous 3 years' residence recorded and every applicable tie answered; otherwise what is still
-    missing (verdict_withheld) and a running count of the year so far (running_count).
+    missing (gate, verdict_withheld) and a running count of the year so far (running_count).
+  * The HMRC figures that apply to a year's recorded facts, with the room left before each and the nearest one
+    still ahead (applicable_figures), which is what the dashboard and the export show progress against.
   * Schengen 90/180 rolling window (any part of a day counts) with the next
     drop-off date, and other country stay limits from country_rules.json.
   * Trip modelling (planned trips merged into a copy of the log).
@@ -527,28 +529,38 @@ def evaluate_ties(log: DayLog, ty: str, as_of: date, summary: dict | None = None
 TIE_LABELS = {"ninety_day": "90-day"}   # the rest are already the words the product uses
 
 
-def verdict_gate(s: dict, t: dict, table: str | None) -> list[str]:
-    """Reasons a stage line must NOT be returned. Empty list = every condition met."""
-    reasons = []
-    if not s["complete"]:
-        reasons.append(f"the tax year is still running (it ends on {fmt_date(s['end'])})")
+def gate_items(s: dict, t: dict, table: str | None) -> list[dict]:
+    """One item per gate condition: `done`, a short `label` for a checklist and the `detail` sentence."""
     n = s["unlogged"]
-    if n:
-        reasons.append(f"{n} day{'s are' if n != 1 else ' is'} not logged")
-    if table is None:
-        reasons.append("residence for the previous 3 tax years is not recorded")
     unanswered = [k for k, v in t["ties"].items()
                   if not (k == "country" and not v.get("applies")) and v.get("user_answer") not in ("yes", "no")]
-    if unanswered:
-        reasons.append("ties not answered: " + ", ".join(TIE_LABELS.get(k, k) for k in unanswered))
-    return reasons
+    return [
+        {"key": "year_ended", "done": s["complete"],
+         "label": "Tax year ended" if s["complete"] else f"Tax year ends {fmt_date(s['end'])}",
+         "detail": f"the tax year is still running (it ends on {fmt_date(s['end'])})"},
+        {"key": "days_logged", "done": not n,
+         "label": "Every day logged" if not n else f"{n} day{'s' if n != 1 else ''} to log",
+         "detail": f"{n} day{'s are' if n != 1 else ' is'} not logged"},
+        {"key": "prior_years", "done": table is not None,
+         "label": "Previous 3 years recorded" if table else "Previous 3 years to record",
+         "detail": "residence for the previous 3 tax years is not recorded"},
+        {"key": "ties_answered", "done": not unanswered,
+         "label": "Ties answered" if not unanswered else f"{len(unanswered)} tie{'s' if len(unanswered) != 1 else ''} to answer",
+         "detail": "ties not answered: " + ", ".join(TIE_LABELS.get(k, k) for k in unanswered)},
+    ]
 
 
-def running_count(s: dict, table: str | None, ties_block: dict, overseas_claim: str = "not_answered") -> dict:
-    """The year so far against the HMRC figures that apply to it, and the year-end date. Never a verdict.
+def verdict_gate(s: dict, t: dict, table: str | None) -> list[str]:
+    """Reasons a stage line must NOT be returned. Empty list = every condition met."""
+    return [i["detail"] for i in gate_items(s, t, table) if not i["done"]]
 
-    `room` on each figure follows the convention used everywhere else in the engine: the number of days that can
-    still be added before the figure is reached."""
+
+def applicable_figures(s: dict, table: str | None, ties_block: dict, overseas_claim: str = "not_answered") -> list[dict]:
+    """The HMRC figures that apply to this year's recorded facts, each with the room left before it.
+
+    `room` follows the convention used everywhere else in the engine: the number of days that can still be added
+    before the figure is reached. `next` marks the nearest UK-day figure still ahead, which is the one the
+    dashboard and the export put their progress bar against."""
     days = s["uk_midnights"]
     figs = []
     if table in ("A", None):
@@ -584,11 +596,23 @@ def running_count(s: dict, table: str | None, ties_block: dict, overseas_claim: 
         f["room_text"] = (f"{f['room']} {f['unit']} of room before {f['figure']}: {f['test']}" if f["room"] >= 0
                           else f"{-f['room']} {f['unit']} past {f['figure']}: {f['test']}")
         f["cite"] = cite(f["ref"])
+        f["next"] = False
+    ahead = [f for f in figs if f["unit"] == "UK days" and f["room"] >= 0]
+    if ahead:
+        min(ahead, key=lambda f: f["room"])["next"] = True
+    return figs
+
+
+def running_count(s: dict, table: str | None, ties_block: dict, overseas_claim: str = "not_answered") -> dict:
+    """The year so far against the HMRC figures that apply to it, and the year-end date. Never a verdict."""
+    days = s["uk_midnights"]
+    figs = applicable_figures(s, table, ties_block, overseas_claim)
     text = (f"Your log so far: {days} UK midnight{'s' if days != 1 else ''} from {fmt_date(s['start'])} to {fmt_date(s['counted_to'])} "
             f"({s['logged']} of {s['days_in_year_to_date']} days logged). "
             f"The tax year {'ended' if s['complete'] else 'ends'} on {fmt_date(s['end'])}.")
     return {"uk_midnights": days, "counted_to": s["counted_to"], "year_ends": s["end"], "logged": s["logged"],
-            "days_in_year_to_date": s["days_in_year_to_date"], "figures": figs, "text": text}
+            "days_in_year_to_date": s["days_in_year_to_date"], "figures": figs,
+            "next_figure": next((f for f in figs if f["next"]), None), "text": text}
 
 
 # --------------------------------------------------------------------------
@@ -622,7 +646,7 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
     if cfg.get("split_year_claimed") in ("yes", "unsure"):
         notes.append(f"You recorded a possible split year ({cfg['split_year_claimed']}). Split-year treatment is recorded, not calculated. {cite('RFIG21000')}")
     if s["unlogged"]:
-        notes.append(f"{s['unlogged']} days in {ty} are not logged yet. Every count below may change once they are.")
+        notes.append(f"{s['unlogged']} days in {ty} are not logged yet. Every count for the year may change once they are.")
 
     # Reference figures strip (RDR3): 16, 46, 91, 121, 183
     for fig, ref in ((16, "RFIG20120"), (46, "RFIG20130"), (91, "RFIG20140"), (121, "RFIG20520"), (183, "RFIG20320")):
@@ -704,7 +728,9 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
         notes.append("Automatic UK tests 2 and 3 rely on your own answers; not recorded as 'no': " + ", ".join(auto_uk) + ". No pointer is shown until they are.")
 
     # The verdict gate: no stage line for a year that cannot yet be counted in full, whatever the pointer above says.
-    withheld = verdict_gate(s, t, table)
+    gate = gate_items(s, t, table)
+    withheld = [i["detail"] for i in gate if not i["done"]]
+    applicable = applicable_figures(s, table, ties_block, ft)
     running = None
     if withheld:
         stage_lines = []
@@ -718,8 +744,8 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
                    "cite": cite("RFIG20570")}
     return {"tax_year": ty, "summary": s, "ties": t, "ties_test": ties_block, "third_automatic_overseas": third,
             "automatic_uk_open": auto_uk, "stage_lines": stage_lines, "verdict_withheld": withheld,
-            "running_count": running, "notes": notes, "figures": figures,
-            "ninety_day_next_year": ninety_next, "work_tie": t["ties"]["work"], "l6": L6}
+            "gate": gate, "applicable_figures": applicable, "running_count": running, "notes": notes,
+            "figures": figures, "ninety_day_next_year": ninety_next, "work_tie": t["ties"]["work"], "l6": L6}
 
 
 # --------------------------------------------------------------------------

@@ -1,4 +1,5 @@
-"""SVG chart builders for the HTML dashboard only (the PDF keeps render_common's plain charts).
+"""SVG chart and component builders for the HTML dashboard; the PDF export reuses several of them through
+render_pdf.static_svg(), which turns the CSS classes here into presentation attributes.
 
 v3 (26 Sep 2026) mirrors the Nomad Pro iOS app (its theme and dashboard components):
 KpiProgressCard rings (track #EAE3D8, round caps), CountryDoughnutChart (stroke 26, butt caps, total + "days" in the
@@ -373,6 +374,135 @@ def calendar(log, start, end, colours, cell=13, gap=3, today=None):
             out.append(f"<rect x='{x + 1}' y='{y + 1}' width='{cell - 2}' height='{cell - 2}' rx='3' fill='{GAP_FILL}' stroke='{AMBER}' stroke-width='1.5' data-tip='{esc(dd.strftime('%a') + ' ' + E.fmt_date(dd) + ' · not logged')}'/>")
     out.append("</svg>")
     return "".join(out)
+
+
+# ------------------------------------------------------------------ Reference card: gauge, day strip, status block
+STRIP_OTHER = "#C8C0B4"   # a logged day outside the UK: neutral, so UK days and gaps carry the eye
+STRIP_TRACK = "#F1ECE4"   # days still to come
+
+
+def gauge(days, figure, marks=(), width=660, height=58, colour=None, aria=""):
+    """Progress bar: `days` UK midnights against `figure`, the nearest HMRC figure ahead.
+
+    `marks` are other figures inside the scale, drawn as a tick and their number. No sentences: the labels
+    around the bar live in the HTML, so the same bar serves the dashboard and the print export."""
+    left = right = 8
+    y, h = 12, 20
+    scale = max(figure, days, 1)
+    colour = colour or band(figure - 1 - days)[1]
+    px = lambda v: left + (width - left - right) * min(v, scale) / scale
+    out = [f"<svg viewBox='0 0 {width} {height}' width='100%' class='chart' role='img' "
+           f"aria-label='{esc(aria or f'{days} UK midnights against the {figure}-day figure')}'>",
+           f"<rect x='{left}' y='{y}' width='{width - left - right}' height='{h}' rx='{h / 2}' fill='{PILL_TRACK}'/>"]
+    if px(days) > left:
+        out.append(f"<rect x='{left}' y='{y}' width='{px(days) - left:.1f}' height='{h}' rx='{h / 2}' fill='{colour}'/>")
+    for m, tip in marks:
+        if not 0 < m < scale:
+            continue
+        out.append(f"<g data-tip='{esc(f'{m} days · {tip}')}'><line x1='{px(m):.1f}' x2='{px(m):.1f}' y1='{y - 4}' y2='{y + h + 4}' stroke='{INK_2}' stroke-width='2'/>"
+                   f"<text x='{px(m):.1f}' y='{height - 3}' text-anchor='middle' class='ax b'>{m}</text></g>")
+    out.append(f"<line x1='{px(figure):.1f}' x2='{px(figure):.1f}' y1='{y - 7}' y2='{y + h + 7}' stroke='{INK}' stroke-width='3'/>"
+               f"<text x='{px(figure):.1f}' y='{height - 3}' text-anchor='end' class='ax b'>{figure}</text>"
+               f"<circle cx='{px(days):.1f}' cy='{y + h / 2}' r='{h / 2 - 1}' fill='#fff' stroke='{colour}' stroke-width='4'/></svg>")
+    return "".join(out)
+
+
+def day_strip(log, start, end, today=None, width=660, height=24):
+    """One thin cell per day of the tax year: UK midnight, logged elsewhere, not logged, or still to come."""
+    n = (end - start).days + 1
+    cw = (width - 2) / n
+    y, h = 2, 16
+    runs: list[list] = []
+    for i, d in enumerate(E.daterange(start, end)):
+        r = None if (today and d > today) else log.row(d)
+        kind = "future" if (today and d > today) else ("gap" if not r else ("uk" if r["midnight_country"] == E.UK else "other"))
+        if runs and runs[-1][0] == kind:
+            runs[-1][2] = i
+        else:
+            runs.append([kind, i, i])
+    fill = {"uk": CORAL, "other": STRIP_OTHER, "gap": AMBER}
+    logged = sum(b - a + 1 for k, a, b in runs if k in ("uk", "other"))
+    out = [f"<svg viewBox='0 0 {width} {height}' width='100%' class='chart' role='img' "
+           f"aria-label='Every day from {esc(E.fmt_date(start))} to {esc(E.fmt_date(end))}: {logged} logged'>",
+           f"<rect x='1' y='{y}' width='{width - 2}' height='{h}' rx='3' fill='{STRIP_TRACK}'/>"]
+    for kind, a, b in runs:
+        if kind == "future":
+            continue
+        out.append(f"<rect x='{1 + a * cw:.2f}' y='{y}' width='{max((b - a + 1) * cw, 0.8):.2f}' height='{h}' fill='{fill[kind]}'/>")
+    d = date(start.year, start.month, 1)
+    while d <= end:
+        if d > start:
+            x = 1 + (d - start).days * cw
+            out.append(f"<line x1='{x:.2f}' x2='{x:.2f}' y1='{y}' y2='{y + h}' stroke='#fff' stroke-width='1' opacity='.65'/>")
+        d = date(d.year + (d.month == 12), d.month % 12 + 1, 1)
+    if today and start <= today <= end:
+        x = 1 + ((today - start).days + 1) * cw
+        out.append(f"<line x1='{x:.2f}' x2='{x:.2f}' y1='{y - 2}' y2='{y + h + 2}' stroke='{INK}' stroke-width='2'/>")
+    out.append("</svg>")
+    return "".join(out)
+
+
+def _sw(colour, outline=False):
+    return (f"<i style='display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;"
+            f"background:{colour}{f';box-shadow:inset 0 0 0 1px {INK_2}' if outline else ''}'></i>")
+
+
+def status_block(ref, log, *, svg=None, icon_fn=None, disc="disc", detail_wrap=None, detail_extra="", strip_width=660):
+    """The Reference block: one visual read of the year, a short checklist, then the figure detail.
+
+    The same markup serves the dashboard and the print export: `svg` adapts a dashboard SVG for print,
+    `icon_fn(name, colour, size)` draws an icon, `disc` is the caller's small-print class and
+    `detail_wrap(html)` wraps the detail (a <details> in the dashboard, a footnote in the export)."""
+    svg = svg or (lambda x: x)
+    icon_fn = icon_fn or (lambda name, colour, size: icon(name, size))
+    s, tt, ty = ref["summary"], ref["ties_test"], ref["tax_year"]
+    start, end = E.tax_year_bounds(ty)
+    to = E.parse_date(s["counted_to"])
+    days = s["uk_midnights"]
+    figs = ref["applicable_figures"]
+    uk_figs = [f for f in figs if f["unit"] == "UK days"]
+    target = next((f for f in figs if f["next"]), None) or (uk_figs[-1] if uk_figs else None)
+    room = target["room"] if target else None
+    key, colr, _ = band(room)
+    colr = CORAL if key == "calm" else colr   # UK days are coral until a figure is close, as in the KPI cards
+    chip = {"calm": "teal", "warn": "attn", "deep": "deep"}[key]
+    if room is None:
+        left_chip = ""
+    elif room < 0:
+        left_chip = f"{-room} days past {target['figure']}"
+    else:
+        left_chip = f"{room} days {'below' if s['complete'] else 'left before'} {target['figure']}"
+    of = f"of {target['figure']}" if target else ""
+    head = (f"<div class='refhead'><div class='refnum'><b style='color:{colr}'>{days}</b>"
+            f"<span><i>{of}</i><br>UK midnights to {esc(E.fmt_date(to))}</span></div>"
+            + (f"<span class='chip {chip} big'>{esc(left_chip)}</span>" if left_chip else "") + "</div>")
+    bar = svg(gauge(days, target["figure"], [(f["figure"], f["test"]) for f in uk_figs if f is not target], colour=colr)) if target else ""
+    legend_key = (f"<div class='key'><span>{_sw(CORAL)}UK midnight</span><span>{_sw(STRIP_OTHER)}Elsewhere</span>"
+                  + (f"<span>{_sw(AMBER)}Not logged</span>" if s["unlogged"] else "")
+                  + (f"<span>{_sw(STRIP_TRACK, True)}To come</span>" if not s["complete"] else "")
+                  + f"<span class='chip'>{s['logged']} of {s['days_in_year_to_date']} days logged</span>"
+                  + (f"<span class='chip attn'>{s['unlogged']} to log</span>" if s["unlogged"] else "") + "</div>")
+    strip = (f"<div class='refstrip'>{svg(day_strip(log, start, end, today=None if s['complete'] else to, width=strip_width))}"
+             f"<div class='taxis'><span>{esc(E.fmt_date(start))}</span><span>{esc(E.fmt_date(end))}</span></div>{legend_key}</div>")
+    if ref["stage_lines"]:
+        status = "".join(f"<div class='pointer'><b>{esc(l['text'])}</b><div class='{disc}'>{esc(l['disclaimer'])}</div></div>"
+                         for l in ref["stage_lines"])
+    else:
+        status = (f"<div class='refstat'><span class='chip attn'>No result for {esc(ty)} yet</span>"
+                  f"<span class='{disc}'>Every box is ticked before a result is given.</span></div>")
+    checks = "".join(f"<li class='{'ok' if i['done'] else 'todo'}'>"
+                     f"{icon_fn('check-circle' if i['done'] else 'alert-circle', PRIMARY if i['done'] else '#B07A12', 15)}"
+                     f"<span>{esc(i['label'])}</span></li>" for i in ref["gate"])
+    nd = ref["ninety_day_next_year"]
+    table_note = " ".join(x for x in (tt.get("band_text") or "", (tt.get("table_reason") or "") + ".") if x.strip(". "))
+    detail = (f"<ul class='small'>" + "".join(f"<li>{esc(f['room_text'])} <span class='muted'>{esc(f['cite'])}</span></li>" for f in figs)
+              + f"</ul><p class='small'>{esc(table_note)}</p>"
+              + f"<p class='small'>Next year: {esc(nd['text'])}. <span class='muted'>{esc(nd['cite'])}</span></p>"
+              + (f"<ul class='small'>" + "".join(f"<li>{esc(n)}</li>" for n in ref["notes"]) + "</ul>" if ref["notes"] else "")
+              + detail_extra)
+    return (f"<div class='ref'>{head}{bar}{strip}{status}<ul class='check'>{checks}</ul>"
+            f"{detail_wrap(detail) if detail_wrap else detail}"
+            f"<p class='{disc}'>A count from your entries. It does not determine residence.</p></div>")
 
 
 # ------------------------------------------------------------------ icons: Feather set (the app uses @expo/vector-icons Feather)

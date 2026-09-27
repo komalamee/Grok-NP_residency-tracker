@@ -26,7 +26,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import srt_engine as E
-from render_common import esc, last_logged, evidence_html, evidence_entries, file_prefix, pointer_block
+from render_common import esc, last_logged, evidence_html, evidence_entries, file_prefix
 import dashboard_charts as C
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -222,8 +222,10 @@ def year_section(log, ty, as_of, planned, prefix, col):
         r = log.row(d)
         n += 1 if (r and r["midnight_country"] == "GB") else 0
         cum.append((d.isoformat(), n))
-    ptrs = pointer_block(ref, "disc")
-    notes = "".join(f"<li>{esc(x)}</li>" for x in ref["notes"])
+    fig_detail = (f"<div class='scroll'>{C.figure_line(uk, ref['figures'], tt.get('line'))}</div>"
+                  f"<p class='small muted'>Every RDR3 day figure, with the HMRC page behind each tick.</p>")
+    ref_card = C.status_block(ref, log, detail_extra=fig_detail,
+                              detail_wrap=lambda h: f"<details><summary>Figures and sources</summary>{h}</details>")
     uk_stays = [x for x in stays if x["country"] == "GB"]
     rows = []
     for x in uk_stays:
@@ -232,17 +234,13 @@ def year_section(log, ty, as_of, planned, prefix, col):
         accs = sorted({(log.days[d].get("accommodation_label") or log.days[d].get("accommodation_id") or "-") for d in E.daterange(a, b)})
         rows.append(f"<tr><td>{E.fmt_date(a)}</td><td>{E.fmt_date(b)}</td><td class='n'>{x['nights']}</td><td class='n'>{wdn}</td><td>{esc(', '.join(accs))}</td><td class='ptr'>{esc('; '.join(x['pointers'])[:160])}</td></tr>")
     accn = "".join(f"<tr><td>{esc(p['label'])}</td><td>{esc((p['relationship'] or '').replace('_', ' '))}</td><td class='n'>{p['nights']}</td><td>{p['nights_needed']}+</td><td>{esc(p['available_91_days_answer'].replace('_', ' '))}</td></tr>" for p in t["ties"]["accommodation"]["places"])
-    nd = ref["ninety_day_next_year"]
     mini = (f"<div class='stats'><div class='stat'><b>{uk}</b><span>UK days</span></div><div class='stat{' attn' if uk_near else ''}'><b>{max(room, 0)}</b><span>days of room before {line}</span></div>"
             f"<div class='stat'><b>{tt.get('recorded_ties', '-')}</b><span>ties recorded</span></div><div class='stat'><b>{esc(tt.get('table') or '-')}</b><span>RDR3 table</span></div>"
             f"<div class='stat'><b>{len(uk_stays)}</b><span>UK visits</span></div></div>")
     h["uk"] = f"""<div class='grid'><section class='card'><h2>UK days so far {info(uk_tip)}<span class='sub'>counted to {E.fmt_date(to)}</span></h2>{mini}
 <div class='scroll' style='margin-top:10px'>{C.area(cum, line, C.CORAL, height=260, label_line=str(line), fmt='{v} UK days', x_end=end.isoformat() if current else None, ymax=max(line + 12, uk + 10), aria='Cumulative UK days this tax year', bands=True)}</div>
 <div class='key'><span><i style='background:{C.PRIMARY}'></i>UK days, running total (colour shows room left)</span><span><i style='background:{C.INK};height:3px'></i>your line ({line}, {esc(ties_label)})</span></div></section></div>
-<div class='grid g11'><section class='card'><h2>Reference</h2>{ptrs}<p class='small'>{esc(tt.get('band_text', ''))}</p><p class='small'>Next year: {esc(nd['text'])}.</p>
-<details><summary>How this is counted</summary><ul class='small'>{notes}</ul><p class='small muted'>{esc(tt.get('table_reason', ''))}. Boundaries follow HMRC's wording ("more than 120"), {esc(E.cite('RFIG20520'))}; {esc(nd['cite'])}.</p></details></section>
-<section class='card'><h2>RDR3 day figures <span class='sub'>tap a tick for the HMRC page</span></h2><div class='scroll'>{C.figure_line(uk, ref['figures'], tt.get('line'))}</div>
-<p class='small muted'>A count from your entries. It does not determine residence.</p></section></div>
+<section class='card mb'><h2>Reference <span class='sub'>{esc(ty)}{SEP}at a glance</span></h2>{ref_card}</section>
 <section class='card mb'><h2>UK visits <span class='sub'>{plural(len(uk_stays), 'visit')}</span></h2><div class='tbl'><table><tr><th>First night</th><th>Last night</th><th>Nights</th><th>Work days</th><th>Stayed at</th><th>Evidence</th></tr>{''.join(rows) or "<tr><td colspan=6 class='muted'>No UK midnights logged.</td></tr>"}</table></div>
 <details><summary>Nights per UK place (accommodation tie inputs, {esc(E.cite('RFIG20550'))})</summary><div class='tbl'><table><tr><th>Place</th><th>Relationship</th><th>Nights</th><th>Figure used</th><th>Available 91+ days (your answer)</th></tr>{accn}</table></div>
 <p class='small muted'>Transit-flagged days: {len(s['transit_flag_dates'])} (recorded, {esc(E.cite('RFIG20730'))}; not applied). UK days without a UK midnight: {len(s['qualifying_days_not_midnight'])} ({esc(E.cite('RFIG20720'))}).</p></details></section>"""
