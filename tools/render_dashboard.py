@@ -26,7 +26,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import srt_engine as E
-from render_common import esc, last_logged, evidence_html, evidence_entries, file_prefix
+from render_common import esc, last_logged, evidence_html, evidence_entries, file_prefix, pointer_block
 import dashboard_charts as C
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -222,7 +222,7 @@ def year_section(log, ty, as_of, planned, prefix, col):
         r = log.row(d)
         n += 1 if (r and r["midnight_country"] == "GB") else 0
         cum.append((d.isoformat(), n))
-    ptrs = "".join(f"<div class='pointer'><b>{esc(l['text'])}</b><div class='disc'>{esc(l['disclaimer'])}</div></div>" for l in ref["stage_lines"])
+    ptrs = pointer_block(ref, "disc")
     notes = "".join(f"<li>{esc(x)}</li>" for x in ref["notes"])
     uk_stays = [x for x in stays if x["country"] == "GB"]
     rows = []

@@ -17,7 +17,7 @@ from datetime import date
 from pathlib import Path
 
 import srt_engine as E
-from render_common import esc, evidence_html, evidence_text
+from render_common import esc, evidence_html, evidence_text, pointer_block
 
 import base64
 import re
@@ -433,7 +433,7 @@ f"<td class='card'><h3>Days by month</h3><div class='small muted' style='margin:
         else:
             cls, word = "na", "Not answered"
         tiles.append(f"<td class='tie {cls}'><div class='ico'>{icon(icons[k], '#fff' if cls in ('on', 'rev') else C.INK_2, 20)}</div><div class='nm'>{names[k]}</div><div class='st'>{word}</div><div class='rf'>{esc(v['ref'])}</div></td>")
-    ptrs = "".join(f"<div class='pointer'><b>{esc(l['text'])}</b><div class='d'>{esc(l['disclaimer'])}</div></div>" for l in ref["stage_lines"])
+    ptrs = pointer_block(ref, "d")
     prox = tt.get("proximity", "")
     pc = {"getting close": "attn", "at the line": "deep", "over the line": "deep"}.get(prox, "teal")
     fig = "".join(f"<tr><td>{f['figure']}</td><td>{esc(E.cite(f['ref']))}</td><td class='n'>{f['distance'] if f['distance'] > 0 else 'reached'}</td></tr>" for f in ref["figures"])
