@@ -38,6 +38,7 @@ Other overrides, mainly for testing: `NOMAD_PRO_REPO_URL`, `NOMAD_PRO_TARBALL_UR
 |---|---|
 | install.sh | Installs or updates the engine at `~/nomad-pro-engine` (see below) |
 | VERSION | Engine version (semantic versioning) |
+| CHANGELOG.md | What changed in each engine version |
 | hmrc/ | Mirror of HMRC's SRT guidance: 143 gov.uk pages (RFIG20000 chapter + RDR3), with catalogue, manifest, change log and `refresh.py` crawler. See HMRC-NOTICE.md |
 | SYSTEM.md | Standing instructions, persona, guardrails, L1–L8 verbatim, data folder layout |
 | skills/*/SKILL.md | engine-setup (first-use install and weekly update check), onboarding, daily-checkin-and-catchup (incl. end-of-week calendar review), evidence-and-documents, travel-rules-watch, hmrc-guidance-watch, trip-planning, export-travel-day-log, records-pack, dashboard, srt-explainer, leaving-uk-checklist, destination-concierge (on request only, never in onboarding) |
@@ -77,6 +78,8 @@ Try the tools on the fictional data (the HMRC mirror is found automatically at `
     python3 tools/srt_engine.py work-rules example/daylog.json --as-of 2026-07-31
 
 On a user's box the bot runs the same tools from the user data folder, e.g. `cd ~/nomad-pro-data && python3 ~/nomad-pro-engine/tools/srt_engine.py summary daylog.json --kb hmrc`, where `hmrc/` is the user's own copy of the mirror (updated weekly by `tools/hmrc_watch.py`).
+
+Country rules work the same way without needing a flag: given no `--rules`, the tools read `$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`, else this repo's `schema/country-rules.json`. The user's copy is the one `tools/travel_rules_check.py` keeps current, so it wins. A `--rules` path that doesn't exist loads no rules rather than falling back to a different table.
 
 `banned_scan.py` checks prose for wording the template never uses (outcome words and residence verdicts) and for private-data leaks. It only has generic leak markers built in; keep any personal terms in a file **outside** the repo and give it with `--private-terms`. HMRC's own verbatim pages under `hmrc/` are exempt from the wording check (they are still scanned for private data).
 

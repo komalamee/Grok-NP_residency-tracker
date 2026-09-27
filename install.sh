@@ -4,6 +4,8 @@
 #   bash install.sh            # install, or update to the latest published version
 #   bash install.sh --check    # only compare the installed VERSION with the published one
 #                              #   exit 0 = up to date, 10 = update available, 1 = could not check
+#   bash install.sh --help     # print the usage above and exit 0, installing nothing (-h works too)
+#                              #   any other flag: same usage on stderr, exit 2, installing nothing
 #
 # Can be run again and again (idempotent). Never needs sudo. Installs into a fixed folder:
 #   ~/nomad-pro-engine   (override with NOMAD_PRO_ENGINE_DIR)
@@ -34,8 +36,43 @@ REPO_URL="${NOMAD_PRO_REPO_URL:-https://github.com/${REPO_SLUG}.git}"
 TARBALL_URL="${NOMAD_PRO_TARBALL_URL:-https://github.com/${REPO_SLUG}/archive/refs/heads/${BRANCH}.tar.gz}"
 VERSION_URL="${NOMAD_PRO_VERSION_URL:-https://raw.githubusercontent.com/${REPO_SLUG}/${BRANCH}/VERSION}"
 SOURCE_DIR="${NOMAD_PRO_SOURCE_DIR:-}"
+
+usage() {
+  cat <<EOF
+Nomad Pro - UK Residency Tracker: install or update the engine on this machine.
+
+Usage:
+  bash install.sh            install, or update to the latest published version
+  bash install.sh --check    only compare the installed VERSION with the published one
+                             (exit 0 = up to date, 10 = update available, 1 = could not check)
+  bash install.sh --help     print this and exit, installing nothing (-h works too)
+
+Can be run again and again (idempotent). Never needs sudo. Installs into:
+  ${ENGINE_DIR}
+
+Environment overrides (mainly for testing or mirrors):
+  NOMAD_PRO_ENGINE_DIR    install folder (default ~/nomad-pro-engine)
+  NOMAD_PRO_REPO_URL      git URL (a local path or file:// URL works too)
+  NOMAD_PRO_BRANCH        branch (default main)
+  NOMAD_PRO_TARBALL_URL   tarball URL (default the GitHub archive of the branch; file:// works)
+  NOMAD_PRO_VERSION_URL   URL of the published VERSION file
+  NOMAD_PRO_SOURCE_DIR    copy from a local folder instead of downloading (no git, no network)
+  NOMAD_PRO_NO_GIT=1      never use git (tarball / local folder only)
+  NOMAD_PRO_SKIP_PIP=1    don't install Python requirements
+  NOMAD_PRO_SKIP_TESTS=1  don't run the test suite
+EOF
+}
+
 MODE="install"
-[ "${1:-}" = "--check" ] && MODE="check"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check) MODE="check" ;;
+    -h|--help) usage; exit 0 ;;
+    *) printf 'nomad-pro: ERROR: unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+  esac
+  shift
+done
+
 [ "$(id -u)" = "0" ] && echo "note: running as root is not needed; this installs into ${ENGINE_DIR} only." >&2
 
 log()  { printf 'nomad-pro: %s\n' "$*"; }

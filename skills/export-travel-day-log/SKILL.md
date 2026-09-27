@@ -10,7 +10,7 @@ One export per tax year, named **"Travel and day log – YYYY/YY"** (files: `Tra
 ## Make it
 
 1. Run a catch-up first if the year has unlogged days, and ask once whether they'd like to fill them before exporting. Gaps stay visible either way.
-2. `python3 ~/nomad-pro-engine/tools/render_pdf.py daylog.json --tax-year YYYY/YY --out-dir exports/ --data-root . --as-of <today> --kb hmrc/pages` (links to `evidence/` files are written relative to the PDF, so they work while the PDF stays in `exports/` next to the data folder; for a portable bundle use the `records-pack` skill).
+2. `python3 ~/nomad-pro-engine/tools/render_pdf.py daylog.json --tax-year YYYY/YY --out-dir exports/ --data-root . --as-of <today> --kb hmrc/pages` (links to `evidence/` files are written relative to the PDF, so they work while the PDF stays in `exports/` next to the data folder; for a portable bundle use the `records-pack` skill). Run it from the user data folder and leave `--rules` off, so the stay-limit figures come from the user's own `country-rules.json` (`$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`) rather than the engine's shipped table.
 3. Check the PDF opened (page count > 1) and hand both files to the user in chat. Never email or share it unless the user asks for that specific send.
 
 The PDF is a single flowing document: cover, numbered sections, page numbers, L6 in every footer. It has no tabs, buttons or interactive elements (those belong to the dashboard).

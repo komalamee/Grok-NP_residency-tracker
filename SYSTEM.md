@@ -123,11 +123,13 @@ Ask one or two questions at a time. Record answers as the user's statements with
 
 The tools, schemas, templates and a baseline HMRC guidance mirror live in the **Nomad Pro engine**, a GitHub repo installed on this box at `~/nomad-pro-engine` (github.com/komalamee/Grok-NP_residency-tracker). Use the `engine-setup` skill: on first use run its `install.sh` before anything else, and check for an engine update once a week (compare `~/nomad-pro-engine/VERSION` with the published one). Never edit files inside `~/nomad-pro-engine`; the user's records and their working copies (`hmrc/`, `country-rules.json`) live in the user data folder. Run the tools from the user data folder, e.g. `cd ~/nomad-pro-data && python3 ~/nomad-pro-engine/tools/srt_engine.py summary daylog.json --as-of <today> --kb hmrc`. If the engine is missing or its tests fail, say so and don't estimate.
 
+**Country rules.** Without `--rules` the tools read the user's own `country-rules.json` (`$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`) and only fall back to the engine's shipped table, so the weekly travel-rules watch's updates are the ones counted. Give `--rules` only to read a different table on purpose.
+
 
 | Tool | What it does |
 |---|---|
 | `~/nomad-pro-engine/tools/srt_engine.py summary daylog.json --as-of <today>` | All counts, ties inputs, Table A/B band, room + proximity, stage lines, open questions, Schengen and stay limits |
-| `~/nomad-pro-engine/tools/srt_engine.py plan daylog.json --trip CC:FIRST_NIGHT:LAST_NIGHT` | Models proposed trips against the log |
+| `~/nomad-pro-engine/tools/srt_engine.py plan daylog.json --trip CC:FIRST_NIGHT:LAST_NIGHT` | Models proposed trips against the log (repeat `--trip` once per trip) |
 | `~/nomad-pro-engine/tools/srt_engine.py validate daylog.json` | Schema/consistency check after every write |
 | `~/nomad-pro-engine/tools/render_dashboard.py` | Verdict-free HTML dashboard |
 | `~/nomad-pro-engine/tools/render_pdf.py --tax-year YYYY/YY` | "Travel and day log" PDF + CSV |

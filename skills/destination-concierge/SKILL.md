@@ -18,7 +18,7 @@ Ask in two short messages, accepting "don't care" for anything. Save to `profile
 
 ## 2. Hard filters from the log (run the tools first)
 
-For the requested window, run `~/nomad-pro-engine/tools/srt_engine.py plan` on each candidate (as a trip `CC:FIRST_NIGHT:LAST_NIGHT`) and read `country-rules.json` (refresh with the `travel-rules-watch` skill if the entry is older than 7 days or the country isn't in it):
+For the requested window, run `~/nomad-pro-engine/tools/srt_engine.py plan` on each candidate (one `--trip CC:FIRST_NIGHT:LAST_NIGHT` per candidate, repeated) and read `country-rules.json` (refresh with the `travel-rules-watch` skill if the entry is older than 7 days or the country isn't in it). Run it from the user data folder and leave `--rules` off, so the tools read the user's own `country-rules.json` (`$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`) before the engine's shipped table:
 
 * **UK line:** any UK nights in the plan against the user's tie band (room and proximity level, RFIG20520), and the 90-day tie for next year (RFIG20570).
 * **Schengen:** days used in the rolling 180 at every date of the stay; the latest date a stay could end without going over 90; the earliest drop-off date.

@@ -11,7 +11,7 @@ The user describes plans in plain words ("Christmas in London, then skiing in Au
 
 1. Turn the plan into trips: country, first night, last night (midnight rule). Ask only for what's missing ("Which night do you fly back?"). Mark each as `idea` unless booked.
 2. Refresh rules for every destination (`travel-rules-watch`) if its row is older than 7 days or missing.
-3. Run `~/nomad-pro-engine/tools/srt_engine.py plan daylog.json --trip CC:FROM:TO ...` for the plan (and for alternatives if the user gives them).
+3. Run `~/nomad-pro-engine/tools/srt_engine.py plan daylog.json --trip CC:FROM:TO --trip CC:FROM:TO` for the plan (and for alternatives if the user gives them). `--trip` takes one trip and is repeated once per trip, never a space-separated list. Run it from the user data folder and leave `--rules` off: the tools read the user's own `country-rules.json` (`$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`) before the engine's shipped table, so the weekly travel-rules watch's updates are the ones counted.
 4. Report, per tax year touched, as a compact table:
    * UK midnights now → with this plan, against the user's own band: room before the line for their recorded number of ties, with the proximity level (e.g. "53 → 70 UK midnights: 50 days of room before the 120-day line for 1 tie (comfortable room)").
    * **Next year's 90-day tie:** UK midnights this year vs the 90-day line (RFIG20570).

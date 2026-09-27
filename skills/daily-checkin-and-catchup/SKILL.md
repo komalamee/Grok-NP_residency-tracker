@@ -18,7 +18,7 @@ description: Use when running the scheduled check-in, when the user tells you wh
 
 If a calendar event title already names the place, pre-fill and ask only for confirmation: "Calendar says Porto, Portugal. Right? Work today?" Keep it to one short message; the user can answer in any wording ("Porto, no work, Booking.com email").
 
-Write the row: `midnight_country`, `countries_present` (add both countries on a travel day), `uk_work`, `evidence` (pointer, and `url` or `file` when a link or stored file exists) with `added_at`, `confidence` (`confirmed` if a record exists, `attested` if it's their word alone, with the date), `logged_via: checkin`. Then run `srt_engine.py validate` and `summary`.
+Write the row: `midnight_country`, `countries_present` (add both countries on a travel day), `uk_work`, `evidence` (pointer, and `url` or `file` when a link or stored file exists) with `added_at`, `confidence` (`confirmed` if a record exists, `attested` if it's their word alone, with the date), `logged_via: checkin`. Then run `srt_engine.py validate` and `summary` from the user data folder, with no `--rules`, so the stay-limit counts come from the user's own `country-rules.json`.
 
 Reply in two or three lines: what was recorded, and only if something moved: e.g. "UK midnights 2026/27: 41. 79 days of room before the 120-day line for 1 tie (comfortable room)." + L4 with the page. Nothing to say? Just confirm the entry.
 

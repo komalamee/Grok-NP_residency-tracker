@@ -2,8 +2,11 @@
 """Travel rules watch: re-read GOV.UK entry requirements for each zone in country-rules.json (and any new
 country), report changes since the last check, and flag planned trips that would break a limit.
 
-  python3 travel_rules_check.py --rules country-rules.json [--daylog DAYLOG.json] [--country thailand ...]
+  python3 travel_rules_check.py [--rules country-rules.json] [--daylog DAYLOG.json] [--country thailand ...]
                                 [--state rules-watch-state.json] [--report OUT.json] [--as-of YYYY-MM-DD]
+
+Without --rules the table comes from the user's own copy ($NOMAD_PRO_DATA/country-rules.json, else
+~/nomad-pro-data/country-rules.json), else the engine's shipped schema/country-rules.json.
 
 Change detection: the GOV.UK 'Entry requirements' part is reduced to its 'Visa requirements' section and hashed;
 public_updated_at and change_description are recorded. A changed hash = "review this row" (the bot then reads
@@ -52,14 +55,18 @@ def visa_section(slug: str) -> dict:
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--rules", required=True)
+    ap.add_argument("--rules", help=E.RULES_HELP)
     ap.add_argument("--daylog")
     ap.add_argument("--country", action="append", default=[], help="extra GOV.UK slug(s) to read, e.g. vietnam")
     ap.add_argument("--state")
     ap.add_argument("--report")
     ap.add_argument("--as-of", default=date.today().isoformat())
     a = ap.parse_args(argv)
-    doc = json.loads(Path(a.rules).read_text(encoding="utf-8"))
+    rules_path = E.default_rules_path(a.rules)
+    if not rules_path:
+        print(f"travel_rules_check: no country-rules file at {a.rules or E.RULES_HELP}", file=sys.stderr)
+        return 2
+    doc = json.loads(rules_path.read_text(encoding="utf-8"))
     rules = doc["rules"]
     E.set_rules(rules)
     state = json.loads(Path(a.state).read_text()) if a.state and Path(a.state).exists() else {}
