@@ -1,0 +1,1149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/nomad-pro/daylog.schema.json",
+  "title": "Nomad Pro - UK Residency Tracker day log",
+  "description": "One JSON document per user: profile, one row per calendar date (the source of truth), planned trips, open questions. Counts are derived by tools/srt_engine.py. Days are never guessed: a date with no evidence or statement stays 'unlogged'.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "profile",
+    "days"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "timezone",
+        "passports"
+      ],
+      "properties": {
+        "display_name": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string",
+          "description": "IANA zone used for 'today' and check-in cut-offs"
+        },
+        "passports": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "ISO 3166 alpha-2; drives country rules"
+        },
+        "british_citizen_confirmed": {
+          "type": "boolean"
+        },
+        "nomad_status": {
+          "enum": [
+            "living_as_nomad",
+            "intending_to"
+          ]
+        },
+        "left_uk_on": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "checkin": {
+          "type": "object",
+          "properties": {
+            "rhythm": {
+              "enum": [
+                "daily",
+                "weekly",
+                "when_moving"
+              ]
+            },
+            "time": {
+              "type": "string"
+            },
+            "weekday": {
+              "type": "string"
+            }
+          }
+        },
+        "connections": {
+          "type": "object",
+          "properties": {
+            "calendar": {
+              "type": "boolean"
+            },
+            "gmail": {
+              "type": "boolean"
+            }
+          }
+        },
+        "proximity_thresholds": {
+          "type": "object",
+          "properties": {
+            "at_the_line": {
+              "type": "integer"
+            },
+            "getting_close": {
+              "type": "integer"
+            }
+          }
+        },
+        "prior_years": {
+          "type": "array",
+          "description": "The 3 tax years before the first tracked year (and any others not in the log)",
+          "items": {
+            "type": "object",
+            "required": [
+              "tax_year"
+            ],
+            "properties": {
+              "tax_year": {
+                "type": "string",
+                "pattern": "^[0-9]{4}/[0-9]{2}$"
+              },
+              "uk_resident": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure",
+                  "not_answered"
+                ]
+              },
+              "uk_days": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "uk_days_over_90": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure",
+                  "not_answered"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "uk_addresses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "accommodation_id": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Labels only in the log; full addresses stay private to the user's copy"
+        },
+        "accommodation_register": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "country",
+              "relationship"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              },
+              "relationship": {
+                "enum": [
+                  "own",
+                  "rented",
+                  "close_relative",
+                  "other_relative",
+                  "friend",
+                  "hotel",
+                  "other"
+                ],
+                "description": "close_relative = parent, grandparent, sibling, child/grandchild 18+ (RFIG20550)"
+              },
+              "owner": {
+                "type": "string",
+                "description": "e.g. 'parent'"
+              },
+              "available_windows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "family": {
+          "type": "object",
+          "properties": {
+            "partner_uk_resident": {
+              "enum": [
+                "yes",
+                "no",
+                "unsure",
+                "n/a"
+              ]
+            },
+            "children_under_18_uk": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "uk_resident": {
+                    "enum": [
+                      "yes",
+                      "no",
+                      "unsure",
+                      "not_answered"
+                    ]
+                  },
+                  "turns_18_on": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "work_periods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "employed",
+                  "self_employed",
+                  "contractor",
+                  "none"
+                ]
+              },
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "overseas_full_time_claimed": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure",
+                  "not_answered"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "evidence_sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "email",
+                  "calendar",
+                  "bank",
+                  "card",
+                  "booking_site",
+                  "maps_timeline",
+                  "photo",
+                  "ticket",
+                  "other"
+                ]
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "tax_years": {
+          "type": "object",
+          "description": "Per tax year: the user's own recorded answers. Never computed by the bot.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "uk_resident_recorded": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure",
+                  "not_answered"
+                ]
+              },
+              "overseas_full_time_work_claimed": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure",
+                  "not_answered"
+                ]
+              },
+              "only_home_in_uk_answer": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure",
+                  "not_answered"
+                ]
+              },
+              "full_time_uk_work_answer": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure",
+                  "not_answered"
+                ]
+              },
+              "split_year_claimed": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unsure",
+                  "not_answered"
+                ]
+              },
+              "accommodation_available_91_days": {
+                "type": "object",
+                "additionalProperties": {
+                  "enum": [
+                    "yes",
+                    "no",
+                    "unsure",
+                    "not_answered"
+                  ]
+                }
+              },
+              "family": {
+                "type": "object"
+              },
+              "tie_answers": {
+                "type": "object",
+                "properties": {
+                  "family": {
+                    "enum": [
+                      "yes",
+                      "no",
+                      "unsure",
+                      "not_answered"
+                    ]
+                  },
+                  "accommodation": {
+                    "enum": [
+                      "yes",
+                      "no",
+                      "unsure",
+                      "not_answered"
+                    ]
+                  },
+                  "work": {
+                    "enum": [
+                      "yes",
+                      "no",
+                      "unsure",
+                      "not_answered"
+                    ]
+                  },
+                  "ninety_day": {
+                    "enum": [
+                      "yes",
+                      "no",
+                      "unsure",
+                      "not_answered"
+                    ]
+                  },
+                  "country": {
+                    "enum": [
+                      "yes",
+                      "no",
+                      "unsure",
+                      "not_answered"
+                    ]
+                  }
+                }
+              },
+              "tie_answers_reviewed_at": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "data_folder_layout": {
+          "type": "string",
+          "description": "daylog.json, evidence/, documents/index.json, profile/destination-preferences.json, country-rules.json, hmrc/, exports/"
+        },
+        "work_day_rules": {
+          "type": "array",
+          "description": "Versioned WORK-DAY RULES agreed with the user in plain words (onboarding, or whenever they change it). The bot follows the rule in force on each date and asks only about exceptions. A new version starts on its own date and closes the previous one the day before; earlier days are never rewritten without asking. Kept as good housekeeping for any HMRC enquiry. Weekends, bank holidays, travel days and exception keywords are always asked; nothing is assumed. The user's own answer for a day always takes priority over the rule.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "effective_from",
+              "weekdays",
+              "weekends",
+              "public_holidays",
+              "travel_days",
+              "exceptions",
+              "agreed_at",
+              "agreed_via",
+              "wording_shown",
+              "user_answers_take_priority"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Version id, e.g. 'v1'; work entries cite it as 'rule:v1'"
+              },
+              "version": {
+                "type": "integer"
+              },
+              "effective_from": {
+                "type": "string",
+                "format": "date"
+              },
+              "effective_to": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "job_periods": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "to": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "description": "Periods in work (employment, contract, self-employment). Outside them, 'outside_periods' applies"
+              },
+              "no_job_periods": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "to": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "description": "Periods with no job: every day is a non-work day"
+              },
+              "weekdays": {
+                "enum": [
+                  "work",
+                  "no_work",
+                  "ask"
+                ],
+                "description": "Default for a weekday in the UK during a job period"
+              },
+              "weekends": {
+                "enum": [
+                  "work",
+                  "no_work",
+                  "ask"
+                ],
+                "description": "Default for Saturday and Sunday; asked at onboarding, never assumed"
+              },
+              "public_holidays": {
+                "enum": [
+                  "work",
+                  "no_work",
+                  "ask",
+                  "as_weekday"
+                ],
+                "description": "asked at onboarding, never assumed"
+              },
+              "public_holiday_region": {
+                "type": "string",
+                "description": "Bank holiday calendar, e.g. 'england-and-wales'"
+              },
+              "public_holiday_dates": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "travel_days": {
+                "enum": [
+                  "work",
+                  "no_work",
+                  "ask"
+                ],
+                "description": "Days travelling into or out of the UK (the UK and another country on the same day, whichever side of midnight). Asked at onboarding; never assumed"
+              },
+              "outside_periods": {
+                "enum": [
+                  "work",
+                  "no_work",
+                  "ask"
+                ]
+              },
+              "exceptions": {
+                "type": "array",
+                "description": "Calendar (or message) keywords and what each means (asked at onboarding; [] if the user has none)",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "keyword",
+                    "means"
+                  ],
+                  "properties": {
+                    "keyword": {
+                      "type": "string"
+                    },
+                    "aliases": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "means": {
+                      "enum": [
+                        "no_work",
+                        "under_3h",
+                        "work",
+                        "ask"
+                      ]
+                    },
+                    "meaning": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "over_3h_basis": {
+                "type": "string",
+                "description": "How UK work of more than 3 hours is decided, in plain words"
+              },
+              "agreed_at": {
+                "type": "string",
+                "format": "date"
+              },
+              "agreed_via": {
+                "type": "string",
+                "description": "e.g. 'agreed with user in chat'"
+              },
+              "agreed_by": {
+                "type": "string"
+              },
+              "applies_to_earlier_days_agreed": {
+                "type": "boolean",
+                "description": "True only if the user agreed the rule may set days before agreed_at"
+              },
+              "wording_shown": {
+                "type": "string",
+                "description": "The exact wording read back to the user and confirmed"
+              },
+              "to_confirm": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Parts of the rule not yet confirmed in the user's own words"
+              },
+              "supersedes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "notes": {
+                "type": "string"
+              },
+              "user_answers_take_priority": {
+                "const": true,
+                "description": "The user's own answer for a day always takes priority over this rule"
+              },
+              "confirmations": {
+                "type": "array",
+                "description": "Later confirmations or clarifications of this version in the user's own words (same agreement, no change of meaning for earlier days)",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "at": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "via": {
+                      "type": "string"
+                    },
+                    "what": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "work_travel": {
+                "enum": [
+                  "ask",
+                  "work",
+                  "travel_day"
+                ],
+                "description": "Days travelling for work (e.g. flying in for a work event or meeting): 'ask' each time, count as a 'work' day, or follow the 'travel_day' setting. Overrides travel_days on a travel day tagged as work travel. Asked at onboarding; treated as 'ask' when unset"
+              },
+              "work_travel_keywords": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Calendar keywords that tag a travel day as work travel (e.g. 'work trip', 'conference', 'client meeting')"
+              }
+            }
+          }
+        }
+      }
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/day"
+      }
+    },
+    "planned_trips": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "country",
+          "from",
+          "to",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "description": "first night"
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "description": "last night"
+          },
+          "status": {
+            "enum": [
+              "idea",
+              "booked",
+              "confirmed_taken",
+              "cancelled"
+            ]
+          },
+          "source_pointer": {
+            "type": "string"
+          },
+          "rules_checked_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "raised_at": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "resolved"
+            ]
+          },
+          "resolution": {
+            "type": "string"
+          },
+          "tax_years": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9]{4}/[0-9]{2}$"
+            },
+            "description": "Tax years the question affects; exports and records packs show it only for these years"
+          }
+        }
+      }
+    },
+    "rule_watch_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "checked_at": {
+            "type": "string"
+          },
+          "zone": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": "string"
+          },
+          "finding": {
+            "type": "string"
+          },
+          "changed": {
+            "type": "boolean"
+          },
+          "trip_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "weekly_reviews": {
+      "type": "array",
+      "description": "End-of-week calendar scans: what the bot proposed, what the user confirmed or corrected. Append-only.",
+      "items": {
+        "type": "object",
+        "required": [
+          "week_start",
+          "week_end",
+          "proposed_at"
+        ],
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "week_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "proposed_at": {
+            "type": "string"
+          },
+          "sources_used": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "e.g. calendar, gmail"
+          },
+          "proposed_days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "midnight_country": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "place": {
+                  "type": "string"
+                },
+                "basis": {
+                  "type": "string",
+                  "description": "calendar event title / email subject the proposal came from"
+                }
+              }
+            }
+          },
+          "status": {
+            "enum": [
+              "awaiting_reply",
+              "confirmed",
+              "corrected",
+              "partly_confirmed",
+              "skipped"
+            ]
+          },
+          "confirmed_at": {
+            "type": "string"
+          },
+          "corrections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "field": {
+                  "type": "string"
+                },
+                "proposed": {},
+                "recorded": {},
+                "user_words": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "day": {
+      "type": "object",
+      "required": [
+        "date",
+        "midnight_country",
+        "confidence"
+      ],
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "tax_year": {
+          "type": "string",
+          "pattern": "^[0-9]{4}/[0-9]{2}$",
+          "description": "6 April to 5 April"
+        },
+        "midnight_country": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ISO alpha-2 where the user was at the end of the day (midnight rule, RFIG20710). null only when unlogged"
+        },
+        "midnight_place": {
+          "type": "string"
+        },
+        "accommodation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accommodation_label": {
+          "type": "string"
+        },
+        "countries_present": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Every country present in on any part of the day (Schengen/visa counting)"
+        },
+        "uk_transit_no_activity": {
+          "type": "boolean",
+          "description": "Recorded only (RFIG20730); never auto-applied"
+        },
+        "exceptional_circumstances": {
+          "type": "object",
+          "properties": {
+            "claimed": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            },
+            "evidence": {
+              "type": "string"
+            }
+          },
+          "description": "Recorded only (RFIG22220)"
+        },
+        "uk_work": {
+          "type": "object",
+          "properties": {
+            "over_3h": {
+              "enum": [
+                "yes",
+                "no",
+                "unsure",
+                "n/a"
+              ],
+              "description": "More than 3 hours of work in the UK that day (RFIG20560). From the user's answer or an agreed work-day rule; never inferred from records alone"
+            },
+            "hours": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Only if the user gave a number; never defaulted"
+            },
+            "note": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "pattern": "^(user_answer|not_asked|rule:[A-Za-z0-9._-]+)$",
+              "description": "Where the value came from: 'user_answer', 'rule:<work_day_rules id>' (the agreed rule in force that day), or 'not_asked'. Entries without a source are older records."
+            },
+            "exception": {
+              "type": "object",
+              "description": "When a rule exception applied: the rule keyword and the calendar event (or message) that triggered it",
+              "properties": {
+                "keyword": {
+                  "type": "string"
+                },
+                "event": {
+                  "type": "string"
+                }
+              }
+            },
+            "work_travel": {
+              "type": "object",
+              "description": "Set when a travel day is travelling for work: the calendar keyword and event that tagged it, or by: 'user_answer' when the user said so",
+              "properties": {
+                "keyword": {
+                  "type": "string"
+                },
+                "event": {
+                  "type": "string"
+                },
+                "by": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "description": "UK work that day. Set from the user's own answer, or from the work-day rule the user agreed (profile.work_day_rules). Calendar, email, booking or card records alone never set it; they only trigger a rule's exception keywords. A UK day that no rule covers and the user has not answered stays 'unsure'."
+        },
+        "overseas_work_hours": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "family_child_seen_in_uk": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "booking",
+                  "card",
+                  "calendar",
+                  "ticket",
+                  "photo",
+                  "attestation",
+                  "maps_timeline",
+                  "email",
+                  "screenshot",
+                  "document",
+                  "other"
+                ]
+              },
+              "pointer": {
+                "type": "string",
+                "description": "Where the record sits, not the file"
+              },
+              "added_at": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string",
+                "description": "Short human label shown in the Evidence column, e.g. 'Airbnb confirmation, Lisbon'"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Clickable link, e.g. the Gmail message link https://mail.google.com/mail/u/0/#all/<message id>, or a calendar event link"
+              },
+              "file": {
+                "type": "string",
+                "pattern": "^evidence/[^/].*",
+                "description": "Path relative to the user's data folder, always under evidence/ (e.g. evidence/2026-03-14-airbnb-lisbon.png)"
+              },
+              "source": {
+                "enum": [
+                  "gmail",
+                  "calendar",
+                  "user_upload",
+                  "bank_export",
+                  "maps_timeline",
+                  "owner_statement",
+                  "other"
+                ],
+                "description": "Where the evidence came from"
+              },
+              "source_id": {
+                "type": "string",
+                "description": "Provider id, e.g. Gmail message id or calendar event id, to re-find the item"
+              },
+              "sha256": {
+                "type": "string",
+                "description": "Hash of a stored file, taken when filed"
+              }
+            }
+          },
+          "description": "Evidence per day. Each item is a link (Gmail message link or other URL), a stored file under evidence/ in the user's data folder (screenshot, image, PDF, export), or a pointer saying where the record sits. The 'Evidence' column in the day log, dashboard and PDF shows links as clickable and pointers as text."
+        },
+        "confidence": {
+          "enum": [
+            "confirmed",
+            "inferred",
+            "attested",
+            "unlogged",
+            "planned"
+          ],
+          "description": "attested = owner statement, record the attestation date in evidence"
+        },
+        "conflict": {
+          "type": "object",
+          "properties": {
+            "detail": {
+              "type": "string"
+            },
+            "resolution": {
+              "type": "string"
+            },
+            "resolved_by": {
+              "type": "string"
+            },
+            "resolved_at": {
+              "type": "string"
+            }
+          }
+        },
+        "logged_at": {
+          "type": "string"
+        },
+        "logged_via": {
+          "enum": [
+            "calendar",
+            "catchup",
+            "checkin",
+            "email",
+            "import",
+            "onboarding",
+            "weekly_review"
+          ]
+        },
+        "changes": {
+          "type": "array",
+          "description": "Append-only",
+          "items": {
+            "type": "object",
+            "properties": {
+              "at": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "from": {},
+              "to": {},
+              "reason": {
+                "type": "string"
+              },
+              "via": {
+                "enum": [
+                  "checkin",
+                  "catchup",
+                  "weekly_review",
+                  "user_correction",
+                  "import",
+                  "evidence_added",
+                  "rule_fix"
+                ],
+                "description": "How the change came in; weekly_review = correction agreed during the end-of-week calendar scan"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

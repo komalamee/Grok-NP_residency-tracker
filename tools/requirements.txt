@@ -1,0 +1,2 @@
+weasyprint>=60
+jsonschema>=4.18

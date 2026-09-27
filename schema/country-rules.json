@@ -1,0 +1,315 @@
+{
+ "title": "Country rules table - Nomad Pro UK Residency Tracker",
+ "passport": "GB (full British citizen passport)",
+ "checked": "2026-09-26",
+ "method": "Each row read from the GOV.UK foreign travel advice 'Entry requirements' page via the GOV.UK content API (source_updated = GOV.UK public_updated_at), corroborated by the destination government or EU Commission where a rule changed recently. Re-checked weekly by the travel-rules-watch routine and immediately when a trip is mentioned.",
+ "legal": "Not tax or immigration advice — check your own position.",
+ "rules": [
+  {
+   "id": "schengen-gb",
+   "zone": "SCHENGEN",
+   "name": "Schengen area",
+   "passport": "GB",
+   "rule": "rolling",
+   "limit_days": 90,
+   "window_days": 180,
+   "counting": "any_part_of_day",
+   "members": [
+    {
+     "code": "AT",
+     "from": null
+    },
+    {
+     "code": "BE",
+     "from": null
+    },
+    {
+     "code": "BG",
+     "from": "2025-01-01"
+    },
+    {
+     "code": "HR",
+     "from": "2023-01-01"
+    },
+    {
+     "code": "CZ",
+     "from": null
+    },
+    {
+     "code": "DK",
+     "from": null
+    },
+    {
+     "code": "EE",
+     "from": null
+    },
+    {
+     "code": "FI",
+     "from": null
+    },
+    {
+     "code": "FR",
+     "from": null
+    },
+    {
+     "code": "DE",
+     "from": null
+    },
+    {
+     "code": "GR",
+     "from": null
+    },
+    {
+     "code": "HU",
+     "from": null
+    },
+    {
+     "code": "IS",
+     "from": null
+    },
+    {
+     "code": "IT",
+     "from": null
+    },
+    {
+     "code": "LV",
+     "from": null
+    },
+    {
+     "code": "LI",
+     "from": null
+    },
+    {
+     "code": "LT",
+     "from": null
+    },
+    {
+     "code": "LU",
+     "from": null
+    },
+    {
+     "code": "MT",
+     "from": null
+    },
+    {
+     "code": "NL",
+     "from": null
+    },
+    {
+     "code": "NO",
+     "from": null
+    },
+    {
+     "code": "PL",
+     "from": null
+    },
+    {
+     "code": "PT",
+     "from": null
+    },
+    {
+     "code": "RO",
+     "from": "2025-01-01"
+    },
+    {
+     "code": "SK",
+     "from": null
+    },
+    {
+     "code": "SI",
+     "from": null
+    },
+    {
+     "code": "ES",
+     "from": null
+    },
+    {
+     "code": "SE",
+     "from": null
+    },
+    {
+     "code": "CH",
+     "from": null
+    }
+   ],
+   "pending_members": {
+    "CY": {
+     "from": null,
+     "status": "Participates in Schengen cooperation; internal border controls not yet lifted by the Council. No Council decision or accession date found as of 2026-09-26."
+    }
+   },
+   "source_url": "https://www.gov.uk/foreign-travel-advice/italy/entry-requirements",
+   "source_title": "GOV.UK Italy entry requirements (Schengen 90 in any 180 days)",
+   "source_updated": "2026-09-17",
+   "corroborating": [
+    {
+     "url": "https://home-affairs.ec.europa.eu/policies/schengen/schengen-area_en",
+     "title": "European Commission, Schengen area (29 countries; Bulgaria and Romania joined 1 Jan 2025; Cyprus integration underway)",
+     "page_date": "2025-05-27",
+     "checked": "2026-09-26"
+    },
+    {
+     "url": "https://home-affairs.ec.europa.eu/policies/schengen/border-crossing/short-stay-calculator_en",
+     "title": "European Commission short-stay calculator",
+     "checked": "2026-09-26"
+    }
+   ],
+   "last_verified": "2026-09-26",
+   "note": "Any part of a day in a Schengen country counts, including entry and exit days. The 180-day window rolls back from each day.",
+   "legal": "L8"
+  },
+  {
+   "id": "cyprus-gb",
+   "zone": "CY",
+   "name": "Cyprus",
+   "passport": "GB",
+   "rule": "rolling",
+   "limit_days": 90,
+   "window_days": 180,
+   "counting": "any_part_of_day",
+   "switch_to_schengen": "When the Council's accession decision takes effect, set SCHENGEN.members CY 'from' to that date; the engine then counts Cyprus inside Schengen from that date and stops using this row.",
+   "source_url": "https://www.gov.uk/foreign-travel-advice/cyprus/entry-requirements",
+   "source_title": "GOV.UK Cyprus entry requirements",
+   "source_updated": "2026-08-14",
+   "finding": "Up to 90 days without a visa; Cyprus is not part of the Schengen area, so Cyprus days and Schengen days are counted separately. Time in the north counts towards the Republic of Cyprus 90-day total.",
+   "corroborating": [
+    {
+     "url": "https://home-affairs.ec.europa.eu/policies/schengen/schengen-area_en",
+     "title": "European Commission: 'internal borders controls have not yet been abolished by the Council. The integration process into the Schengen area is currently underway.'",
+     "page_date": "2025-05-27",
+     "checked": "2026-09-26"
+    },
+    {
+     "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX%3A52026DC0150",
+     "title": "COM(2026) 150 State of Schengen report, 18 May 2026: priority 'Complete Cyprus' accession to the Schengen area'",
+     "page_date": "2026-05-18",
+     "checked": "2026-09-26"
+    }
+   ],
+   "last_verified": "2026-09-26",
+   "legal": "L8"
+  },
+  {
+   "id": "thailand-gb",
+   "zone": "TH",
+   "name": "Thailand",
+   "passport": "GB",
+   "rule": "per_entry",
+   "limit_days": 30,
+   "counting": "any_part_of_day",
+   "effective_from": "2026-09-15",
+   "previous": {
+    "limit_days": 60,
+    "note": "Entries before 15 Sep 2026: stay the period stamped on arrival (60-day scheme, revoked from 15 Sep 2026)."
+   },
+   "max_entries_per_calendar_year": 2,
+   "max_entries_note": "GOV.UK: visa-exempt entry for tourism is 'normally limited to two entries per calendar year'.",
+   "purpose": "tourism only (visa exemption does not cover business travel)",
+   "source_url": "https://www.gov.uk/foreign-travel-advice/thailand/entry-requirements",
+   "source_title": "GOV.UK Thailand entry requirements",
+   "source_updated": "2026-09-18",
+   "finding": "From 15 Sep 2026, visa-exempt entry for British citizens is up to 30 days, tourism only; normally 2 visa-exempt entries per calendar year. Entrants before 15 Sep 2026 keep the period stamped on arrival.",
+   "corroborating": [
+    {
+     "url": "https://thailand.prd.go.th/en/content/category/detail/id/48/iid/538547",
+     "title": "Thai Government PR Dept (citing MFA Dept of Consular Affairs): 60-day scheme revoked; revised 30-day scheme; effective 15 Sep 2026; Royal Gazette 31 Aug 2026",
+     "page_date": "2026-09-04",
+     "checked": "2026-09-26"
+    },
+    {
+     "url": "https://image.mfa.go.th/mfa/0/zE6021nSnu/0303/%E0%B8%9C.30.pdf",
+     "title": "Thai MFA Dept of Consular Affairs list, 30-day visa exemption (ordinary passports), UK = no. 59",
+     "page_date": "2026-09-15",
+     "checked": "2026-09-26"
+    },
+    {
+     "url": "https://www.tatnews.org/2026/09/thailand-introduces-new-30-day-and-15-day-visa-exemption-rules-from-15-september/",
+     "title": "Tourism Authority of Thailand newsroom",
+     "page_date": "2026-09-01",
+     "checked": "2026-09-26"
+    }
+   ],
+   "last_verified": "2026-09-26",
+   "legal": "L8"
+  },
+  {
+   "id": "laos-gb",
+   "zone": "LA",
+   "name": "Laos",
+   "passport": "GB",
+   "rule": "visa_per_entry",
+   "limit_days": 30,
+   "counting": "any_part_of_day",
+   "visa_required": true,
+   "source_url": "https://www.gov.uk/foreign-travel-advice/laos/entry-requirements",
+   "source_title": "GOV.UK Laos entry requirements",
+   "source_updated": "2026-08-13",
+   "finding": "Visa required (e-visa or visa on arrival at listed entry points); tourist visa 30 days from arrival, single entry; up to 2 extensions (60 days).",
+   "last_verified": "2026-09-26",
+   "legal": "L8"
+  },
+  {
+   "id": "uae-gb",
+   "zone": "AE",
+   "name": "United Arab Emirates",
+   "passport": "GB",
+   "rule": "rolling",
+   "limit_days": 90,
+   "window_days": 180,
+   "counting": "any_part_of_day",
+   "source_url": "https://www.gov.uk/foreign-travel-advice/united-arab-emirates/entry-requirements",
+   "source_title": "GOV.UK UAE entry requirements",
+   "source_updated": "2026-07-24",
+   "finding": "Visit visa on arrival, valid up to 90 days over a 180-day period beginning from the date of first entry (continuous or split).",
+   "note": "GOV.UK says the 180-day period begins at first entry; the engine uses a rolling window as an approximation.",
+   "last_verified": "2026-09-26",
+   "legal": "L8"
+  },
+  {
+   "id": "malaysia-gb",
+   "zone": "MY",
+   "name": "Malaysia",
+   "passport": "GB",
+   "rule": "per_entry",
+   "limit_days": 90,
+   "counting": "any_part_of_day",
+   "source_url": "https://www.gov.uk/foreign-travel-advice/malaysia/entry-requirements",
+   "source_title": "GOV.UK Malaysia entry requirements",
+   "source_updated": "2026-03-19",
+   "finding": "No visa for tourism; normally 90 days on arrival. Online arrival card required.",
+   "last_verified": "2026-09-26",
+   "legal": "L8"
+  },
+  {
+   "id": "montenegro-gb",
+   "zone": "ME",
+   "name": "Montenegro",
+   "passport": "GB",
+   "rule": "rolling",
+   "limit_days": 90,
+   "window_days": 180,
+   "counting": "any_part_of_day",
+   "source_url": "https://www.gov.uk/foreign-travel-advice/montenegro/entry-requirements",
+   "source_title": "GOV.UK Montenegro entry requirements",
+   "source_updated": "2026-08-13",
+   "finding": "Up to 90 days in any 180-day period; not Schengen (counted separately).",
+   "last_verified": "2026-09-26",
+   "legal": "L8"
+  },
+  {
+   "id": "japan-gb",
+   "zone": "JP",
+   "name": "Japan",
+   "passport": "GB",
+   "rule": "per_entry",
+   "limit_days": 90,
+   "counting": "any_part_of_day",
+   "source_url": "https://www.gov.uk/foreign-travel-advice/japan/entry-requirements",
+   "source_title": "GOV.UK Japan entry requirements",
+   "source_updated": "2026-08-28",
+   "finding": "Visa on arrival for tourism or business up to 90 days.",
+   "last_verified": "2026-09-26",
+   "legal": "L8"
+  }
+ ]
+}
