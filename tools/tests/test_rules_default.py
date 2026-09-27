@@ -33,7 +33,9 @@ def write_rules(folder: Path, th_limit: int) -> Path:
 
 class RulesDefaultOrder(unittest.TestCase):
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp())
+        td = tempfile.TemporaryDirectory()
+        self.addCleanup(td.cleanup)
+        self.tmp = Path(td.name)
         self.home = self.tmp / "home"
         (self.home / "nomad-pro-data").mkdir(parents=True)
         self.data = self.tmp / "data"
