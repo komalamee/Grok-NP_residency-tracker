@@ -195,6 +195,26 @@ footer .l6{font-weight:600;color:var(--ink)}
 .chip{white-space:nowrap;max-width:100%}.kpi .lab{flex-wrap:wrap}
 .legend li span{min-width:0;overflow-wrap:anywhere}
 .chip{white-space:normal;text-align:left;line-height:1.35}
+/* v3.3 Reference card: one visual read of the year, then a checklist, with the detail folded away */
+.ref{display:flex;flex-direction:column;gap:12px}
+.refhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.refnum{display:flex;align-items:center;gap:10px;margin-right:auto}
+.refnum b{font-size:46px;font-weight:800;letter-spacing:-2px;line-height:1}
+.refnum i{font-style:normal;font-size:17px;font-weight:800;color:var(--ink2)}
+.refnum span{font-size:12.5px;font-weight:600;color:var(--muted);line-height:1.35}
+.chip.big{font-size:14px;font-weight:800;padding:7px 14px}
+.refstrip{display:flex;flex-direction:column;gap:4px}
+.refstrip .taxis{font-size:11.5px}
+.refstat{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ref .pointer{margin:0}
+ul.check{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
+ul.check li{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;color:var(--ink2)}
+ul.check li.todo{color:#8A5A00}
+ul.check li.ok{color:var(--primary)}
+ul.check svg{flex:none}
+.ref details{margin-top:2px}
+.ref>.disc{margin:0;font-size:12px;color:var(--muted)}
+@media (max-width:640px){.refnum b{font-size:38px}ul.check{grid-template-columns:1fr}}
 /* v3.2 work-day rule card */
 blockquote.rule{margin:4px 0 10px;padding:10px 14px;border-left:4px solid #7A6FD0;background:#F5F3FD;border-radius:0 10px 10px 0;font-size:14px;line-height:21px;color:var(--ink);overflow-wrap:anywhere}
 .alert.attn-soft{background:#FFF7E8;border-color:#F4DFB4;font-size:14px;line-height:20px;overflow-wrap:anywhere}

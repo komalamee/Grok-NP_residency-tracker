@@ -17,7 +17,7 @@ from datetime import date
 from pathlib import Path
 
 import srt_engine as E
-from render_common import esc, evidence_html, evidence_text, pointer_block
+from render_common import esc, evidence_html, evidence_text
 
 import base64
 import re
@@ -88,6 +88,25 @@ td.tie{vertical-align:top;text-align:center;border:1px solid #E8E2D9;border-bott
 .tie.na{border-style:dashed}.tie.rev{background:#FFF7E8;border-color:#F4DFB4}.tie.rev .ico{background:#E5A535}.tie.rev .st{color:#8A5A00}
 .key span{font-size:7.4pt;color:#6B6B6B;margin-right:3mm;white-space:nowrap}
 .toc{margin:0;padding-left:5mm;columns:2;font-size:8.3pt}.toc li{margin:.4mm 0}
+/* Reference block (section 3): the same markup as the dashboard's Reference card */
+/* No floats: WeasyPrint keeps floats out of flow, so the bar would ride over the number. */
+.refnum{display:inline-block;vertical-align:middle}
+.refnum b{display:inline-block;vertical-align:middle;font-size:26pt;font-weight:800;letter-spacing:-1pt;line-height:1}
+.refnum i{font-style:normal;font-size:11pt;font-weight:800;color:#6B6B6B}
+.refnum span{display:inline-block;vertical-align:middle;font-size:7.6pt;font-weight:600;color:#9E9E9E;line-height:1.35;margin-left:2.5mm}
+.refhead .chip{vertical-align:middle;margin-left:4mm}.chip.big{font-size:8.8pt;padding:.8mm 3mm}
+.refstrip{margin:2mm 0 0}
+.taxis{font-size:7pt;font-weight:600;color:#9E9E9E;margin:.8mm 0 1.2mm}
+.taxis span{display:inline-block;width:49%}.taxis span:last-child{text-align:right}
+.refstat{margin:2mm 0 0}.refstat .chip{margin-right:2mm}.refstat .d{display:inline;font-size:7.8pt}
+ul.check{list-style:none;margin:2.5mm 0 0;padding:0;columns:2;font-size:8.2pt;font-weight:700;color:#6B6B6B}
+ul.check li{margin:.7mm 0;break-inside:avoid}
+ul.check li.todo{color:#8A5A00}ul.check li.ok{color:#1A9B8C}
+ul.check svg{display:inline-block;vertical-align:-.7mm;margin-right:1.2mm}
+.fine{border-top:1px solid #EFEAE3;margin-top:3mm;padding-top:1.5mm;font-size:7.2pt;color:#6B6B6B}
+.fine b{display:block;font-size:7.6pt;color:#9E9E9E;text-transform:uppercase;letter-spacing:.4pt;margin-bottom:1mm}
+.fine ul{padding-left:4mm}.fine p{margin:1mm 0}
+.ref>.d{margin:2.5mm 0 0;font-size:7.2pt;color:#9E9E9E}
 .pb{break-before:page}svg{display:block}
 a{color:#1A9B8C;text-decoration:underline}
 ul{margin:1mm 0;padding-left:5mm}
@@ -397,7 +416,7 @@ def build_html(log: E.DayLog, ty: str, as_of: date, prefix: str = "") -> tuple[s
 {lay(f"""<td class='card'><h3>Days by country</h3><div class='small muted' style='margin:-1.5mm 0 1.5mm'>counted by where you were at midnight</div>
 <table class='split'><tr><td class='sp' style='width:40mm'>{donut}</td><td class='sp'><div style='margin-left:2mm'><table class='legend fx'><col><col style='width:11mm'><col style='width:10mm'>{legend}</table></div></td></tr></table>{(f"<p class='small muted' style='margin:1mm 0 0'>Other: {esc(', '.join(f'{E.cname(c)} {v}d' for c, v in rest))}</p>") if rest else ''}</td>""",
 f"<td class='card'><h3>Days by month</h3><div class='small muted' style='margin:-1.5mm 0 1.5mm'>UK at the base of each bar</div>{bars_svg(months)}<div class='key'>{mkey}</div></td>", widths=(56, 44))}
-<div class='card'><h3>Contents</h3><ol class='toc'><li>Location timeline</li><li>Schengen, rolling 180 days</li><li>Ties and reference figures</li><li>Summary counts</li><li>Stays</li><li>UK days</li><li>UK work days (more than 3 hours)</li><li>Work-day rule</li><li>Ties as recorded</li><li>Day-by-day log with evidence</li><li>Gaps, open questions and changes</li><li>Counting method</li></ol>
+<div class='card'><h3>Contents</h3><ol class='toc'><li>Location timeline</li><li>Schengen, rolling 180 days</li><li>Where your log stands, and your ties</li><li>Summary counts</li><li>Stays</li><li>UK days</li><li>UK work days (more than 3 hours)</li><li>Work-day rule</li><li>Ties as recorded</li><li>Day-by-day log with evidence</li><li>Gaps, open questions and changes</li><li>Counting method</li></ol>
 <p class='small muted' style='margin:2mm 0 0'>A record of the days, places and work you logged and where the supporting records sit. It does not determine residence. Counts are arithmetic on your own entries.</p></div>
 <div class='legal'>{esc(E.L6)}</div>"""
 
@@ -433,18 +452,17 @@ f"<td class='card'><h3>Days by month</h3><div class='small muted' style='margin:
         else:
             cls, word = "na", "Not answered"
         tiles.append(f"<td class='tie {cls}'><div class='ico'>{icon(icons[k], '#fff' if cls in ('on', 'rev') else C.INK_2, 20)}</div><div class='nm'>{names[k]}</div><div class='st'>{word}</div><div class='rf'>{esc(v['ref'])}</div></td>")
-    ptrs = pointer_block(ref, "d")
-    prox = tt.get("proximity", "")
-    pc = {"getting close": "attn", "at the line": "deep", "over the line": "deep"}.get(prox, "teal")
     fig = "".join(f"<tr><td>{f['figure']}</td><td>{esc(E.cite(f['ref']))}</td><td class='n'>{f['distance'] if f['distance'] > 0 else 'reached'}</td></tr>" for f in ref["figures"])
-    ties_ref = f"""<h2><span class='n'>3</span>Ties and reference figures</h2>
+    fig_detail = (f"{static_svg(C.figure_line(uk, ref['figures'], tt.get('line'), colour=uk_col))}"
+                  f"<table class='fx' style='margin-top:1.5mm'><col style='width:18%'><col style='width:60%'><col style='width:22%'>"
+                  f"<thead><tr><th>Figure</th><th>HMRC page</th><th>Days to go</th></tr></thead>{fig}</table>"
+                  f"<p style='margin:1.5mm 0 0'>Table and boundaries as published in {esc(E.cite('RFIG20520'))} and {esc(E.cite('RDR3'))}.</p>")
+    status = C.status_block(ref, log, svg=static_svg, icon_fn=icon, disc="d", detail_extra=fig_detail,
+                            detail_wrap=lambda h: f"<div class='fine'><b>Figures and sources</b>{h}</div>")
+    ties_ref = f"""<h2><span class='n'>3</span>Where your log stands<span class='sub'>{esc(ty)}{SEP}at a glance</span></h2>
+<div class='card'>{status}</div>
 <div class='card'><h3>Your UK ties <span class='sub'>as you recorded them{SEP}{t['recorded_count']} recorded</span></h3><table class='tiles'><tr>{''.join(tiles)}</tr></table>
-<div class='key' style='margin-top:2mm'><span>On = recorded yes</span><span>Off = recorded no</span><span>Dashed = not answered / not applicable</span><span>Amber = your answer and the log differ</span></div></div>
-<div class='card'><h3>UK days against RDR3 day figures <span class='sub'>{uk} UK days{SEP}your line {line}</span></h3>{static_svg(C.figure_line(uk, ref['figures'], tt.get('line'), colour=uk_col))}
-<p style='margin:1mm 0'>{esc(tt.get('band_text', ''))} <b>{esc(tt.get('room_text', ''))}</b> <span class='chip {pc}'>{esc(prox)}</span></p>
-<p class='small muted' style='margin:0'>{esc(tt.get('table_reason', ''))}. Table and boundaries as published in {esc(E.cite('RFIG20520'))} and {esc(E.cite('RDR3'))}.</p>{ptrs}
-<table class='fx' style='margin-top:2mm'><col style='width:18%'><col style='width:60%'><col style='width:22%'><thead><tr><th>Figure</th><th>HMRC page</th><th>Days to go</th></tr></thead>{fig}</table>
-<ul class='small'>{''.join(f'<li>{esc(n)}</li>' for n in ref['notes'])}<li>{esc(ref['ninety_day_next_year']['text'])} ({esc(ref['ninety_day_next_year']['cite'])}).</li></ul></div>"""
+<div class='key' style='margin-top:2mm'><span>On = recorded yes</span><span>Off = recorded no</span><span>Dashed = not answered / not applicable</span><span>Amber = your answer and the log differ</span></div></div>"""
 
     # ---------------------------------------------------------------- 4. summary counts
     summary = f"""<h2 class='pb'><span class='n'>4</span>Summary counts</h2><div class='card'>
