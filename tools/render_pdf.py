@@ -417,7 +417,7 @@ def build_html(log: E.DayLog, ty: str, as_of: date, prefix: str = "") -> tuple[s
 <table class='split'><tr><td class='sp' style='width:40mm'>{donut}</td><td class='sp'><div style='margin-left:2mm'><table class='legend fx'><col><col style='width:11mm'><col style='width:10mm'>{legend}</table></div></td></tr></table>{(f"<p class='small muted' style='margin:1mm 0 0'>Other: {esc(', '.join(f'{E.cname(c)} {v}d' for c, v in rest))}</p>") if rest else ''}</td>""",
 f"<td class='card'><h3>Days by month</h3><div class='small muted' style='margin:-1.5mm 0 1.5mm'>UK at the base of each bar</div>{bars_svg(months)}<div class='key'>{mkey}</div></td>", widths=(56, 44))}
 <div class='card'><h3>Contents</h3><ol class='toc'><li>Location timeline</li><li>Schengen, rolling 180 days</li><li>Where your log stands, and your ties</li><li>Summary counts</li><li>Stays</li><li>UK days</li><li>UK work days (more than 3 hours)</li><li>Work-day rule</li><li>Ties as recorded</li><li>Day-by-day log with evidence</li><li>Gaps, open questions and changes</li><li>Counting method</li></ol>
-<p class='small muted' style='margin:2mm 0 0'>A record of the days, places and work you logged and where the supporting records sit. It does not determine residence. Counts are arithmetic on your own entries.</p></div>
+<p class='small muted' style='margin:2mm 0 0'>A record of the days, places and work you logged and where the supporting records sit. Educational, not tax advice. It records days; it doesn't decide your residence. Counts are arithmetic on your own entries.</p></div>
 <div class='legal'>{esc(E.L6)}</div>"""
 
     # ---------------------------------------------------------------- 1. timeline, 2. Schengen, 3. ties

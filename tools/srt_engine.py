@@ -2,7 +2,7 @@
 """Nomad Pro - UK Residency Tracker: counting engine.
 
 Record-keeping arithmetic only. Every figure this module produces is a count
-from the user's own day log. Nothing here determines anyone's residence.
+from the user's own day log. Nothing here decides anyone's residence.
 
 What it computes
   * UK tax years (6 April - 5 April) and the midnight rule (RFIG20710).
@@ -11,9 +11,9 @@ What it computes
   * RDR3 / RFIG20520 Table A / Table B bands using HMRC's own "more than" boundaries.
   * Distance ("room") to each HMRC figure and a proximity level:
     comfortable room / getting close / at the line / over the line.
-  * The verdict gate: a stage line ("Your log points to ...") only for a tax year that has ended with every day
+  * The result gate: a stage line ("Your log matches ...") only for a tax year that has ended with every day
     logged, the previous 3 years' residence recorded and every applicable tie answered; otherwise what is still
-    missing (gate, verdict_withheld) and a running count of the year so far (running_count).
+    missing (gate, result_withheld) and a running count of the year so far (running_count).
   * The HMRC figures that apply to a year's recorded facts, with the room left before each and the nearest one
     still ahead (applicable_figures), which is what the dashboard and the export show progress against.
   * Schengen 90/180 rolling window (any part of a day counts) with the next
@@ -520,9 +520,9 @@ def evaluate_ties(log: DayLog, ty: str, as_of: date, summary: dict | None = None
 
 
 # --------------------------------------------------------------------------
-# Verdict gate and running count
+# Result gate and running count
 # --------------------------------------------------------------------------
-# A stage line ("Your log points to non-resident under the <test>") is a statement about a whole tax year, so it
+# A stage line ("Your log matches the <test> for this tax year") is a statement about a whole tax year, so it
 # is withheld until the year can be counted in full: the year has ended, every day in it is logged, residence for
 # the previous 3 tax years is recorded and every applicable tie is answered. Until then the tools return what is
 # still missing and a running count of the year so far, which decides nothing.
@@ -550,7 +550,7 @@ def gate_items(s: dict, t: dict, table: str | None) -> list[dict]:
     ]
 
 
-def verdict_gate(s: dict, t: dict, table: str | None) -> list[str]:
+def result_gate(s: dict, t: dict, table: str | None) -> list[str]:
     """Reasons a stage line must NOT be returned. Empty list = every condition met."""
     return [i["detail"] for i in gate_items(s, t, table) if not i["done"]]
 
@@ -604,7 +604,7 @@ def applicable_figures(s: dict, table: str | None, ties_block: dict, overseas_cl
 
 
 def running_count(s: dict, table: str | None, ties_block: dict, overseas_claim: str = "not_answered") -> dict:
-    """The year so far against the HMRC figures that apply to it, and the year-end date. Never a verdict."""
+    """The year so far against the HMRC figures that apply to it, and the year-end date. Never a result."""
     days = s["uk_midnights"]
     figs = applicable_figures(s, table, ties_block, overseas_claim)
     text = (f"Your log so far: {days} UK midnight{'s' if days != 1 else ''} from {fmt_date(s['start'])} to {fmt_date(s['counted_to'])} "
@@ -616,7 +616,7 @@ def running_count(s: dict, table: str | None, ties_block: dict, overseas_claim: 
 
 
 # --------------------------------------------------------------------------
-# SRT reference view (stage order, no verdicts)
+# SRT reference view (stage order, no residence results)
 # --------------------------------------------------------------------------
 def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = None) -> dict:
     s = summarise_year(log, ty, as_of)
@@ -684,8 +684,8 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
         ref = "RFIG20140"
     stage_lines = []
     if pointer:
-        stage_lines.append({"test": pointer, "ref": ref,
-                            "text": f"Your log points to non-resident under the {pointer}."
+        stage_lines.append({"test": pointer, "ref": ref, "matches": True,
+                            "text": f"Your log matches the {pointer} for this tax year."
                                     + (" (Day and work-day figures from your log; the full-time overseas work condition is your own recorded answer and is not calculated.)" if ref == "RFIG20140" else ""),
                             "disclaimer": l4(ref)})
 
@@ -714,8 +714,8 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
             ties_block["band_text"] = f"RDR3 Table {table} pairs {band['label']} days with at least {need} ties; your log records {t['recorded_count']}."
         insufficient = need is None or t["recorded_count"] + len(t["unknown"]) < need
         if not auto_uk and insufficient:
-            stage_lines.append({"test": "sufficient ties test", "ref": "RFIG20520",
-                                "text": "Your log points to non-resident under the sufficient ties test.",
+            stage_lines.append({"test": "sufficient ties test", "ref": "RFIG20520", "matches": False,
+                                "text": "Your log does not match the sufficient ties test for this tax year.",
                                 "disclaimer": l4("RFIG20520")})
         elif not auto_uk and t["unknown"] and t["recorded_count"] < (need or 0):
             notes.append("Unanswered ties (" + ", ".join(t["unknown"]) + ") could change the ties test reference. Answer them to complete the record.")
@@ -727,7 +727,7 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
     if auto_uk and days < 183:
         notes.append("Automatic UK tests 2 and 3 rely on your own answers; not recorded as 'no': " + ", ".join(auto_uk) + ". No pointer is shown until they are.")
 
-    # The verdict gate: no stage line for a year that cannot yet be counted in full, whatever the pointer above says.
+    # The result gate: no stage line for a year that cannot yet be counted in full, whatever the pointer above says.
     gate = gate_items(s, t, table)
     withheld = [i["detail"] for i in gate if not i["done"]]
     applicable = applicable_figures(s, table, ties_block, ft)
@@ -743,7 +743,7 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
                             else f"{days - 90} days over the 90-day line: {ty} would count towards a 90-day tie in {next_ty} and the year after"),
                    "cite": cite("RFIG20570")}
     return {"tax_year": ty, "summary": s, "ties": t, "ties_test": ties_block, "third_automatic_overseas": third,
-            "automatic_uk_open": auto_uk, "stage_lines": stage_lines, "verdict_withheld": withheld,
+            "automatic_uk_open": auto_uk, "stage_lines": stage_lines, "result_withheld": withheld,
             "gate": gate, "applicable_figures": applicable, "running_count": running, "notes": notes,
             "figures": figures, "ninety_day_next_year": ninety_next, "work_tie": t["ties"]["work"], "l6": L6}
 

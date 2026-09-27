@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nomad-pro.example/schema/documents-index.schema.json",
   "title": "Nomad Pro status documents index",
-  "description": "Index of documents that record the user's circumstances (employment contract, termination notice, tenancy end, sale completion, P85 acknowledgement, etc.). Files live in documents/ in the user's data folder; items may instead be a link or a pointer to where the user keeps them. Record-keeping only: a filed document is not a determination of anything.",
+  "description": "Index of documents that record the user's circumstances (employment contract, termination notice, tenancy end, sale completion, P85 acknowledgement, etc.). Files live in documents/ in the user's data folder; items may instead be a link or a pointer to where the user keeps them. Record-keeping only: a filed document records a fact and decides nothing.",
   "type": "object",
   "required": ["schema_version", "documents"],
   "properties": {

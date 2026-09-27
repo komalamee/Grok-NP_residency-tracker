@@ -158,7 +158,8 @@ class AutomaticTests(unittest.TestCase):
     def test_approved_phrasing_and_l4(self):
         ref = E.srt_reference(make_log(uk_days=36, ties={"accommodation": "yes"}), "2026/27", date(2027, 4, 5))
         line = ref["stage_lines"][0]
-        self.assertEqual(line["text"], "Your log points to non-resident under the sufficient ties test.")
+        self.assertEqual(line["text"], "Your log does not match the sufficient ties test for this tax year.")
+        self.assertFalse(line["matches"])
         self.assertEqual(line["disclaimer"], "Not tax advice \u2014 always check your own position. Source: RFIG20520 (updated 3 Jul 2026).")
 
 

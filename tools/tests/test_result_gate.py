@@ -1,4 +1,4 @@
-"""The verdict gate: no stage line unless the tax year has ended, every day in it is logged,
+"""The result gate: no stage line unless the tax year has ended, every day in it is logged,
 residence for the previous 3 tax years is recorded and every applicable tie is answered.
 Until then the engine returns what is missing plus a running count, and the dashboard and the
 PDF export show that running count where the stage line would go."""
@@ -25,79 +25,78 @@ TY = "2026/27"
 MID_YEAR = date(2026, 9, 27)
 YEAR_END = date(2027, 4, 5)
 RULES = str(KIT / "schema" / "country-rules.json")
-# The approved stage-line wording, assembled here so banned_scan.py does not read this test as a statement.
-POINTS_TO = "points to " + "non" + "-resident"
+MATCHES = "Your log matches the"
 
 
 def figure(rc, n):
     return [f for f in rc["figures"] if f["figure"] == n][0]
 
 
-class VerdictGate(unittest.TestCase):
-    def test_empty_log_mid_year_returns_no_verdict(self):
+class ResultGate(unittest.TestCase):
+    def test_empty_log_mid_year_returns_no_result(self):
         log = make_log(TY, fill_to=date(2026, 4, 5))  # no days in 2026/27 at all
         ref = E.srt_reference(log, TY, MID_YEAR)
         self.assertEqual(ref["summary"]["logged"], 0)
         self.assertEqual(ref["stage_lines"], [])
-        self.assertTrue(any("still running" in r for r in ref["verdict_withheld"]))
-        self.assertTrue(any("175 days are not logged" in r for r in ref["verdict_withheld"]))
+        self.assertTrue(any("still running" in r for r in ref["result_withheld"]))
+        self.assertTrue(any("175 days are not logged" in r for r in ref["result_withheld"]))
         rc = ref["running_count"]
         self.assertEqual(rc["uk_midnights"], 0)
         self.assertEqual(rc["year_ends"], "2027-04-05")
         self.assertEqual(rc["text"], "Your log so far: 0 UK midnights from 6 Apr 2026 to 27 Sep 2026 "
                                      "(0 of 175 days logged). The tax year ends on 5 Apr 2027.")
-        self.assertNotIn(POINTS_TO, rc["text"])
+        self.assertNotIn(MATCHES, rc["text"])
 
-    def test_mid_year_fully_logged_to_date_returns_no_verdict(self):
+    def test_mid_year_fully_logged_to_date_returns_no_result(self):
         log = make_log(TY, uk_days=5, fill_to=MID_YEAR)
         ref = E.srt_reference(log, TY, MID_YEAR)
         self.assertEqual(ref["summary"]["unlogged"], 0)
         self.assertEqual(ref["stage_lines"], [])
-        self.assertEqual(ref["verdict_withheld"], ["the tax year is still running (it ends on 5 Apr 2027)"])
+        self.assertEqual(ref["result_withheld"], ["the tax year is still running (it ends on 5 Apr 2027)"])
         rc = ref["running_count"]
         self.assertEqual(rc["uk_midnights"], 5)
         self.assertEqual(rc["text"], "Your log so far: 5 UK midnights from 6 Apr 2026 to 27 Sep 2026 "
                                      "(175 of 175 days logged). The tax year ends on 5 Apr 2027.")
         self.assertEqual(figure(rc, 16)["room"], 10)
 
-    def test_finished_year_with_unlogged_days_returns_no_verdict(self):
+    def test_finished_year_with_unlogged_days_returns_no_result(self):
         log = make_log(TY, uk_days=5, fill_to=date(2027, 3, 1))
         ref = E.srt_reference(log, TY, YEAR_END)
         self.assertEqual(ref["stage_lines"], [])
-        self.assertEqual(ref["verdict_withheld"], ["35 days are not logged"])
+        self.assertEqual(ref["result_withheld"], ["35 days are not logged"])
         self.assertIn("The tax year ended on 5 Apr 2027", ref["running_count"]["text"])
 
     def test_one_unlogged_day_is_reported_in_the_singular(self):
         log = make_log(TY, uk_days=5, fill_to=date(2027, 4, 4))
         ref = E.srt_reference(log, TY, YEAR_END)
-        self.assertEqual(ref["verdict_withheld"], ["1 day is not logged"])
+        self.assertEqual(ref["result_withheld"], ["1 day is not logged"])
         self.assertEqual(ref["stage_lines"], [])
 
-    def test_finished_year_with_unanswered_tie_returns_no_verdict(self):
+    def test_finished_year_with_unanswered_tie_returns_no_result(self):
         log = make_log(TY, uk_days=5, ties={"family": "not_answered"})
         ref = E.srt_reference(log, TY, YEAR_END)
         self.assertEqual(ref["stage_lines"], [])
-        self.assertIn("ties not answered: family", ref["verdict_withheld"])
+        self.assertIn("ties not answered: family", ref["result_withheld"])
 
     def test_unanswered_ties_are_named_as_the_product_names_them(self):
         log = make_log(TY, uk_days=5, ties={"ninety_day": "not_answered", "country": "unsure"})
         ref = E.srt_reference(log, TY, YEAR_END)
-        self.assertIn("ties not answered: 90-day, country", ref["verdict_withheld"])
+        self.assertIn("ties not answered: 90-day, country", ref["result_withheld"])
 
-    def test_finished_year_without_prior_years_returns_no_verdict(self):
+    def test_finished_year_without_prior_years_returns_no_result(self):
         log = make_log(TY, uk_days=5, prior_resident="unsure")
         ref = E.srt_reference(log, TY, YEAR_END)
         self.assertEqual(ref["stage_lines"], [])
-        self.assertIn("residence for the previous 3 tax years is not recorded", ref["verdict_withheld"])
+        self.assertIn("residence for the previous 3 tax years is not recorded", ref["result_withheld"])
         # Neither table is known, so both automatic-overseas day figures are listed as conditional.
         rc = ref["running_count"]
         self.assertEqual([f["figure"] for f in rc["figures"]], [16, 46, 183])
         self.assertIn("applies if you were UK resident", figure(rc, 16)["text"])
 
-    def test_finished_complete_answered_year_still_returns_verdict(self):
+    def test_finished_complete_answered_year_still_returns_its_line(self):
         log = make_log(TY, uk_days=5)
         ref = E.srt_reference(log, TY, YEAR_END)
-        self.assertEqual(ref["verdict_withheld"], [])
+        self.assertEqual(ref["result_withheld"], [])
         self.assertIsNone(ref["running_count"])
         self.assertIn("first automatic overseas test", [l["test"] for l in ref["stage_lines"]])
 
@@ -175,7 +174,7 @@ class GateChecklist(unittest.TestCase):
 
     def test_labels_and_reasons_stay_in_step(self):
         ref = E.srt_reference(make_log(TY, uk_days=5, prior_resident="unsure"), TY, YEAR_END)
-        self.assertEqual([i["detail"] for i in ref["gate"] if not i["done"]], ref["verdict_withheld"])
+        self.assertEqual([i["detail"] for i in ref["gate"] if not i["done"]], ref["result_withheld"])
         self.assertIn(("Previous 3 years to record", False), self.labels(ref))
 
 
@@ -207,7 +206,7 @@ class ReferenceVisual(unittest.TestCase):
 
 
 class Outputs(unittest.TestCase):
-    """Dashboard and PDF export: one visual read, a checklist, and no verdict until the gate opens."""
+    """Dashboard and PDF export: one visual read, a checklist, and no result until the gate opens."""
 
     def setUp(self):
         self.mid = make_log(TY, uk_days=5, fill_to=MID_YEAR)
@@ -217,7 +216,7 @@ class Outputs(unittest.TestCase):
         self.assertIn("class='refnum'", html)
         self.assertIn(f"aria-label='{count} UK midnights against the {figure}-day figure'", html)
         self.assertIn("Every day from 6 Apr 2026 to 5 Apr 2027", html)   # the day strip
-        self.assertIn("A count from your entries. It does not determine residence.", html)
+        self.assertIn("Educational, not tax advice. It records days; it doesn't decide your residence.", html)
 
     def test_dashboard_mid_year_is_a_count_a_chip_and_a_checklist(self):
         h = RD.render(self.mid, MID_YEAR, [])
@@ -226,7 +225,7 @@ class Outputs(unittest.TestCase):
         self.assertIn("No result for 2026/27 yet", h)
         self.assertIn("Tax year ends 5 Apr 2027", h)
         self.assertIn("Every box is ticked before a result is given.", h)
-        self.assertNotIn(POINTS_TO, h)
+        self.assertNotIn(MATCHES, h)
         self.assertNotIn("Your log so far:", h)   # the long running sentence stays in the engine output
 
     def test_dashboard_folds_the_figure_detail_away(self):
@@ -239,7 +238,7 @@ class Outputs(unittest.TestCase):
     def test_dashboard_shows_the_stage_line_for_a_finished_year(self):
         h = RD.render(self.done, YEAR_END, [])
         self.check_visual(h, 5, 16)
-        self.assertIn(POINTS_TO + " under the first automatic overseas test", h)
+        self.assertIn(MATCHES + " first automatic overseas test for this tax year.", h)
         self.assertIn("Not tax advice \u2014 always check your own position. Source: RFIG20120", h)
         self.assertIn("Every day logged", h)
         self.assertNotIn("No result for", h)
@@ -252,13 +251,13 @@ class Outputs(unittest.TestCase):
         self.assertIn("No result for 2026/27 yet", html)
         self.assertIn("<div class='fine'><b>Figures and sources</b>", html)
         self.assertGreater(html.index("10 UK days of room before 16"), html.index("<div class='fine'>"))
-        self.assertNotIn(POINTS_TO, html)
+        self.assertNotIn(MATCHES, html)
         self.assertNotIn("Your log so far:", html)
 
     def test_pdf_export_shows_the_stage_line_for_a_finished_year(self):
         html, _ = RP.build_html(self.done, TY, YEAR_END)
         self.check_visual(html, 5, 16)
-        self.assertIn(POINTS_TO + " under the first automatic overseas test", html)
+        self.assertIn(MATCHES + " first automatic overseas test for this tax year.", html)
         self.assertNotIn("Your log so far:", html)
 
     def test_cli_summary_empty_log_mid_year(self):
@@ -269,7 +268,7 @@ class Outputs(unittest.TestCase):
             out = subprocess.run([sys.executable, str(HERE.parent / "srt_engine.py"), "summary", str(p),
                                   "--as-of", MID_YEAR.isoformat(), "--rules", RULES],
                                  capture_output=True, text=True, check=True).stdout
-        self.assertNotIn(POINTS_TO, out)
+        self.assertNotIn(MATCHES, out)
         year = json.loads(out)["years"][TY]
         self.assertEqual(year["stage_lines"], [])
         self.assertIn("The tax year ends on 5 Apr 2027", year["running_count"]["text"])
