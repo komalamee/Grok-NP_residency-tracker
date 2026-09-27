@@ -38,6 +38,7 @@ Other overrides, mainly for testing: `NOMAD_PRO_REPO_URL`, `NOMAD_PRO_TARBALL_UR
 |---|---|
 | install.sh | Installs or updates the engine at `~/nomad-pro-engine` (see below) |
 | VERSION | Engine version (semantic versioning) |
+| CHANGELOG.md | What changed in each engine version |
 | hmrc/ | Mirror of HMRC's SRT guidance: 143 gov.uk pages (RFIG20000 chapter + RDR3), with catalogue, manifest, change log and `refresh.py` crawler. See HMRC-NOTICE.md |
 | SYSTEM.md | Standing instructions, persona, guardrails, L1–L8 verbatim, data folder layout |
 | skills/*/SKILL.md | engine-setup (first-use install and weekly update check), onboarding, daily-checkin-and-catchup (incl. end-of-week calendar review), evidence-and-documents, travel-rules-watch, hmrc-guidance-watch, trip-planning, export-travel-day-log, records-pack, dashboard, srt-explainer, leaving-uk-checklist, destination-concierge (on request only, never in onboarding) |
