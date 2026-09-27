@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nomad-pro.example/schema/documents-index.schema.json",
+  "title": "Nomad Pro status documents index",
+  "description": "Index of documents that record the user's circumstances (employment contract, termination notice, tenancy end, sale completion, P85 acknowledgement, etc.). Files live in documents/ in the user's data folder; items may instead be a link or a pointer to where the user keeps them. Record-keeping only: a filed document is not a determination of anything.",
+  "type": "object",
+  "required": ["schema_version", "documents"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "title", "tax_years", "date_added", "status"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^doc-[a-z0-9-]+$"},
+          "type": {"enum": ["employment_contract", "termination_notice", "overseas_employment_letter", "self_employment_record", "tenancy_agreement", "tenancy_ended", "property_sale_completion", "property_let_agreement", "p85_submission", "hmrc_correspondence", "gp_deregistration", "council_tax_closure", "visa_or_residence_permit", "overseas_tax_residence_certificate", "overseas_address_evidence", "school_or_childcare", "other"]},
+          "title": {"type": "string", "description": "Neutral description, e.g. 'Employment contract, full-time role based overseas'"},
+          "tax_years": {"type": "array", "items": {"type": "string", "pattern": "^[0-9]{4}/[0-9]{2}$"}, "description": "Tax years the document relates to (6 April to 5 April)"},
+          "relates_to": {"type": "array", "items": {"enum": ["full_time_overseas_work", "work_tie", "accommodation_tie", "family_tie", "only_home_in_uk", "full_time_uk_work", "split_year", "leaving_uk", "arriving_uk", "other"]}},
+          "document_date": {"type": ["string", "null"], "format": "date", "description": "Date on the document itself"},
+          "effective_from": {"type": ["string", "null"], "format": "date"},
+          "effective_to": {"type": ["string", "null"], "format": "date"},
+          "file": {"type": "string", "pattern": "^documents/[^/].*", "description": "Path relative to the user's data folder"},
+          "url": {"type": "string", "format": "uri", "description": "Link instead of a file, e.g. Gmail message or Drive file"},
+          "pointer": {"type": "string", "description": "Where the user keeps it when no file or link is filed"},
+          "sha256": {"type": "string"},
+          "date_added": {"type": "string", "format": "date"},
+          "added_via": {"enum": ["onboarding", "chat_upload", "gmail", "drive", "user_statement"]},
+          "status": {"enum": ["filed", "link_only", "pointer_only", "requested", "superseded"]},
+          "requested_at": {"type": ["string", "null"], "format": "date"},
+          "notes": {"type": "string"},
+          "conflicts_with": {"type": "array", "items": {"type": "string"}, "description": "ids of documents or profile answers that record a different date or fact"}
+        },
+        "anyOf": [{"required": ["file"]}, {"required": ["url"]}, {"required": ["pointer"]}, {"properties": {"status": {"const": "requested"}}}]
+      }
+    }
+  }
+}

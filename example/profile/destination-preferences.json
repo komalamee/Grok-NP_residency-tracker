@@ -1,0 +1,14 @@
+{
+  "saved_at": "2026-02-01T10:00:00+00:00",
+  "answers": {
+    "monthly_budget": {"amount": 1800, "currency": "GBP", "includes_rent": true},
+    "rent_ceiling": {"amount": 800, "currency": "GBP", "type": "studio"},
+    "cost_of_living_weight": 3, "food_cost_weight": 2, "transport_ease_weight": 2, "cab_cost_weight": 1,
+    "languages_spoken": ["English"], "english_spoken_weight": 2,
+    "lgbtqia_safety_weight": 3, "crime_safety_weight": 3,
+    "climate": "warm, not too humid", "time_zone_band": "within UK+3 for calls",
+    "stay_length_days": {"min": 30, "max": 90},
+    "include_reddit_threads": true,
+    "free_text": "Fictional sample answers for the template."
+  }
+}

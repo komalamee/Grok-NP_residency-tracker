@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nomad-pro.example/schema/destination-preferences.schema.json",
+  "title": "Nomad Pro destination preferences (profile/destination-preferences.json)",
+  "description": "Saved answers from the 'Where should I go next?' questionnaire. Only what the user said; never inferred. Weights 0 (don't care) to 3 (very important).",
+  "type": "object",
+  "required": ["saved_at", "answers"],
+  "properties": {
+    "saved_at": {"type": "string"},
+    "updated_at": {"type": "string"},
+    "answers": {
+      "type": "object",
+      "properties": {
+        "monthly_budget": {"type": "object", "properties": {"amount": {"type": "number"}, "currency": {"type": "string"}, "includes_rent": {"type": "boolean"}}},
+        "rent_ceiling": {"type": "object", "properties": {"amount": {"type": "number"}, "currency": {"type": "string"}, "type": {"enum": ["room", "studio", "1-bed", "2-bed", "serviced", "any"]}}},
+        "cost_of_living_weight": {"type": "integer", "minimum": 0, "maximum": 3},
+        "food_cost_weight": {"type": "integer", "minimum": 0, "maximum": 3},
+        "transport_ease_weight": {"type": "integer", "minimum": 0, "maximum": 3},
+        "cab_cost_weight": {"type": "integer", "minimum": 0, "maximum": 3},
+        "languages_spoken": {"type": "array", "items": {"type": "string"}},
+        "english_spoken_weight": {"type": "integer", "minimum": 0, "maximum": 3},
+        "lgbtqia_safety_weight": {"type": "integer", "minimum": 0, "maximum": 3},
+        "crime_safety_weight": {"type": "integer", "minimum": 0, "maximum": 3},
+        "climate": {"type": "string", "description": "User's words, e.g. 'warm, not humid'"},
+        "time_zone_band": {"type": "string", "description": "e.g. 'within UK+3 for work calls'"},
+        "internet_needs": {"type": "string"},
+        "stay_length_days": {"type": "object", "properties": {"min": {"type": "integer"}, "max": {"type": "integer"}}},
+        "must_haves": {"type": "array", "items": {"type": "string"}},
+        "avoid": {"type": "array", "items": {"type": "string"}},
+        "include_reddit_threads": {"type": "boolean", "description": "Whether to include community threads (labelled anecdotal) on local nuances"},
+        "free_text": {"type": "string"}
+      }
+    },
+    "history": {"type": "array", "items": {"type": "object", "properties": {"at": {"type": "string"}, "field": {"type": "string"}, "from": {}, "to": {}}}}
+  }
+}

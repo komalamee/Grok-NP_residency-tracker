@@ -1,0 +1,52 @@
+---
+name: onboarding
+description: Use when a new user starts Nomad Pro, or asks to set up, redo or complete their profile, history, ties, UK addresses, work, record sources, upcoming trips or backfill. Ends by scheduling the first check-in.
+---
+
+# Onboarding
+
+Goal: a complete, honest starting record in one relaxed conversation (about 15 minutes), then the first check-in scheduled. Plain language in; you write the structured record (`profile` + `days` + `planned_trips` in `daylog.json`, schema `~/nomad-pro-engine/schema/daylog.schema.json`).
+
+Open with one short paragraph: what Nomad Pro does (keeps your day log, measures it against HMRC's published SRT figures and visa limits, models future trips, produces your Travel and day log), what it doesn't do (advice or residence decisions), and that everything stays in their own copy. Offer to go at their pace; they can skip anything and come back.
+
+Before the first message, make sure the Nomad Pro engine is installed at `~/nomad-pro-engine` and the user data folder exists (`engine-setup` skill: run `install.sh` on first use). Do this quietly; mention it only if it fails.
+
+## Steps (ask a few questions per message; accept "not sure")
+
+1. **Eligibility.** Confirm they hold British citizenship and live, or intend to live, as a nomad. Ask their passports (drives stay limits) and home timezone. If not British, explain that the template is built around UK rules and stop politely.
+2. **Tax-year history.** For each of the 3 tax years before the first year you will track: did they record themselves as UK resident (yes/no/unsure), and roughly how many UK days (a number, or "more than 90: yes/no/unsure"). Explain why in one line: RDR3 Table A vs Table B depends on the previous 3 years, and the 90-day tie looks at the previous 2 (RFIG20570). Store under `profile.prior_years` and `profile.tax_years[*].uk_resident_recorded`. Never infer a status.
+3. **Departure / plans.** When they left the UK (or plan to), and whether they may be in a split year; record the claim only (RFIG21000).
+4. **Ties, one at a time, citing each page:**
+   * Family (RFIG20530): UK-resident spouse, civil partner, or partner they live with as if married; under-18 children who are UK resident, and whether they see them in the UK (61-day figure, part days count).
+   * Accommodation (RFIG20550, RFIG22170): every UK place they could stay: label, owner and relationship (own, rented, parent/grandparent/sibling/adult child or grandchild = close relative, other relative, friend, hotel), whether it's available for a continuous 91 days in the year. Explain the 1-night vs 16-nights figures. Create `accommodation_register` entries; days link to them.
+   * Work (RFIG20560): do they work, and do they ever work in the UK for more than 3 hours a day. Explain in one line: work takes its everyday meaning (RFIG20740); RFIG21930 gives reviewing and responding to emails and meetings as examples of work activity to record.
+   * 90-day (RFIG20570): covered by step 2.
+   * Country (RFIG20580): explain that it only applies if they were UK resident in 1+ of the previous 3 years and that ties go to the UK when equal. Nothing to answer; the log computes it.
+   Record each answer in `tax_years[YYYY/YY].tie_answers` with `tie_answers_reviewed_at`. Their answer is kept even if the log later differs; you'll flag differences, never overwrite.
+5. **UK addresses** (labels for the log; the full address only if they want it stored privately).
+6. **Employment:** employed / self-employed / contractor / none, dates, and whether they claim full-time work overseas for a year (RFIG20140). Record as their claim; it is not calculated. **If they say they work full-time overseas, ask for the employment contract** (and any termination notice later): "Could you send it, or tell me where it's kept? I'll file it with the tax years it covers." File it with the `evidence-and-documents` skill (`documents/` + `documents/index.json`); if they'd rather not now, record a `requested` entry and move on.
+7. **Work-day rule (agree the user's own rule in plain words, then follow it).** Every user has their own rule; **never assume a default**. Ask each of these, one short question at a time, and record the answer exactly as given (work / non-work / ask me each time):
+   * which job periods it covers (from step 6), and any periods with no job (every day a non-work day);
+   * **weekdays** in the UK during a job period;
+   * **weekends**;
+   * **UK bank holidays**;
+   * **travel days**: days flying (or otherwise travelling) into or out of the UK;
+   * **travelling for work**: days travelling for work, e.g. flying in for a work event or client meeting: ask each time / count as a work day / follow the travel-day setting (`work_travel`: `ask` / `work` / `travel_day`), and which calendar words mark a work trip (`work_travel_keywords`, e.g. 'work trip', 'conference', 'client meeting'). If they ask whether travel counts as work, answer from the `srt-explainer` Q&A (RFIG20740, RFIG20750) without a verdict;
+   * **calendar exception keywords** they use and what each means (e.g. `sick` = non-work, `less than 3 hours` = not over 3 hours, `holiday` / `out of office` = non-work), or "none";
+   * how "more than 3 hours" is decided (e.g. "a normal weekday is always more than 3 hours unless I mark it").
+   Offer an example only to show the shape ("Weekends are non-work days; while employed every weekday in the UK is a work day unless my calendar says sick / holiday / less than 3 hours"), never as a preset. Tell them their own answer for any day **always takes priority over the rule**. Read the whole rule back in one short paragraph in their words, including that sentence, ask "Is that right?", and save it only when they confirm and every item above has an answer: `profile.work_day_rules` entry with `id` (v1), `effective_from`/`effective_to`, `job_periods`, `no_job_periods`, `weekdays`, `weekends`, `public_holidays`, `travel_days`, `work_travel` (and `work_travel_keywords`), `exceptions` (`[]` if none), `over_3h_basis`, `user_answers_take_priority: true`, `agreed_at`, `agreed_via: "agreed with user in chat"`, and `wording_shown` (the exact paragraph they confirmed). `validate` rejects a rule with any of these missing. If they'd rather be asked every day, record `ask` for those items. Applying the rule to days before today needs their explicit OK (`applies_to_earlier_days_agreed: true`). Later clarifications in their own words go in `confirmations` (date, how, what). Tell them the rule is kept with their records as good housekeeping for any HMRC enquiry and can be changed any time.
+8. **Automatic UK test answers:** is a UK home their only home (RFIG20330)? Do they work full-time in the UK (RFIG20370)? Store as `only_home_in_uk_answer`, `full_time_uk_work_answer`.
+9. **Record sources:** where their records sit (email bookings, calendar, bank/card apps, booking sites, maps timeline, photos, tickets). Explain the Evidence column: each day can carry a clickable link (an email, or a file they send, stored in their `evidence/` folder) or a pointer saying where the record sits. Also ask about status documents they already hold (contract, tenancy end, P85 acknowledgement) and offer to file them.
+10. **Connections (optional).** Offer both; each is read-only and nothing is ever sent from them.
+   * **Google Calendar:** "If you connect your calendar, I can use it as a source of evidence and propose the days for you to confirm, instead of asking from scratch: at check-ins, after a quiet spell, and in a short end-of-week review ('Here's what I think your week was. Is this right?')." Ask them to put the **city and country in event titles** from now on ("Lisbon, Portugal"; "Flight BKK–LHR"). Calendar entries are proposals; nothing is written until they confirm.
+   * **Gmail:** "If you connect Gmail, I can attach a link to the booking or ticket email that supports each day, so your day log, dashboard and PDF have a clickable Evidence column. You can also send screenshots and I'll store them in your evidence folder." Every attachment is shown to them first.
+   If they connect the calendar, create the weekly calendar review routine as well (see `routines.md`).
+11. **Upcoming trips:** where and when (ideas or booked). Add to `planned_trips`, then run the `travel-rules-watch` skill for each new country immediately.
+12. **Backfill.** Walk backwards from today to the start of the current tax year (and earlier years if they want exports for them): "Where were you sleeping in …?" Use calendar/email if connected, but every day you write needs a record pointer or the user's own statement (confidence `attested`, dated). Leave anything unknown as not logged and list it. Set UK work from the agreed work-day rule (step 7) with `srt_engine.apply_work_rule` (source `rule:<id>`, plus the calendar event and keyword when an exception applies), and ask only about days the rule leaves open or where the calendar shows a possible exception. With no rule, calendar presence alone never makes a work day: ask, and leave unanswered UK days `unsure` (`source: not_asked`). Use `countries_present` on travel days (both countries).
+13. **Run** `~/nomad-pro-engine/tools/srt_engine.py validate` then `summary`. Share a short read-back: UK midnights and UK work days per year (and how many were set by the rule vs their answers), days not logged, the ties table as they answered it, the Table A/B band and room with its proximity level, Schengen days in the last 180, and any questions HMRC could ask (from `open_questions`). Use the approved result sentence only if the engine returns it, with L4.
+14. **Rhythm and first check-in.** Offer daily (default, at a time they choose), weekly, or "when I move". Create the routines in `routines.md` (check-in at the chosen rhythm, weekly travel-rules watch, weekly HMRC watch, and the end-of-week calendar review if the calendar is connected). Tell them the first check-in time.
+15. **How to use it**, in five lines: tell me where you were (any wording); tell me where you want to go and I'll model it; send or forward records and I'll attach them to the right days; ask for your Travel and day log any time (it's also made automatically after 5 April), or a Records pack for several years; ask for the dashboard.
+
+Do **not** run the destination questionnaire during onboarding. The `destination-concierge` skill is used later, only when the user asks where to go next.
+
+Close with L6.

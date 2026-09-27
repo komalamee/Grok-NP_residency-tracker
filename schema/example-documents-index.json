@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "documents": [
+    {"id": "doc-contract-2024", "type": "employment_contract", "title": "Employment contract, full-time role based overseas (fictional sample)", "tax_years": ["2024/25", "2025/26"], "relates_to": ["full_time_overseas_work"], "document_date": "2024-03-01", "effective_from": "2024-04-01", "effective_to": null, "file": "documents/2024-03-01-employment-contract-sample.pdf", "date_added": "2025-05-02", "added_via": "chat_upload", "status": "filed"},
+    {"id": "doc-tenancy-end", "type": "tenancy_ended", "title": "Letting agent confirmation that the UK tenancy ended (fictional sample)", "tax_years": ["2024/25"], "relates_to": ["accommodation_tie", "leaving_uk"], "document_date": "2024-04-02", "effective_from": "2024-04-01", "url": "https://mail.google.com/mail/u/0/#all/sample-message-id-0001", "date_added": "2025-05-02", "added_via": "gmail", "status": "link_only"},
+    {"id": "doc-p85", "type": "p85_submission", "title": "P85 submitted online, acknowledgement (fictional sample)", "tax_years": ["2024/25"], "relates_to": ["leaving_uk"], "document_date": "2024-04-20", "pointer": "HMRC online account, messages", "date_added": "2025-05-02", "added_via": "user_statement", "status": "pointer_only"},
+    {"id": "doc-termination", "type": "termination_notice", "title": "Termination notice (requested, not yet provided)", "tax_years": ["2025/26"], "relates_to": ["full_time_overseas_work"], "date_added": "2026-02-10", "added_via": "user_statement", "status": "requested", "requested_at": "2026-02-10"}
+  ]
+}
