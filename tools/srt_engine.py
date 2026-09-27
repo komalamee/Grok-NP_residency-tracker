@@ -18,7 +18,9 @@ What it computes
     still ahead (applicable_figures), which is what the dashboard and the export show progress against.
   * Schengen 90/180 rolling window (any part of a day counts) with the next
     drop-off date, and other country stay limits from country_rules.json.
-  * Trip modelling (planned trips merged into a copy of the log).
+  * Trip modelling (planned trips merged into a copy of the log), with the days still available before the
+    UK day figure that applies next (uk_days_remaining_with_plan) and in the Schengen 90/180 window
+    (schengen_days_remaining_with_plan) stated outright.
 
 Usage
   python3 srt_engine.py summary  DAYLOG.json [--as-of YYYY-MM-DD] [--rules RULES.json]
@@ -932,6 +934,36 @@ def apply_trips(log: DayLog, trips: list[dict]) -> DayLog:
     return tmp
 
 
+def uk_days_remaining(ref: dict) -> dict | None:
+    """The UK-day figure that applies next to a year, and the days the log can still take before it.
+
+    Saves the caller the subtraction: `days_remaining` is how many more UK days fit below `figure`
+    (0 once the figure is reached), `days_over` how many days the count is past it. None when the year
+    has no applicable UK-day figure at all."""
+    figs = [f for f in ref["applicable_figures"] if f["unit"] == "UK days"]
+    if not figs:
+        return None
+    f = next((x for x in figs if x["next"]), figs[-1])
+    return {"figure": f["figure"], "test": f["test"], "unit": f["unit"], "uk_days": f["counted"],
+            "days_remaining": max(f["room"], 0), "days_over": max(-f["room"], 0), "room": f["room"],
+            "ref": f["ref"], "cite": f["cite"], "text": f["room_text"]}
+
+
+def schengen_days_remaining(points: list[dict], window: int = 180) -> dict | None:
+    """The fullest point of the Schengen rolling window across `points` (rolling_status dicts), with the
+    days still available stated outright rather than left as `limit` minus `used`."""
+    if not points:
+        return None
+    tight = max(points, key=lambda st: st["used"])
+    limit = tight.get("limit", 90)
+    room = limit - tight["used"]
+    return {"zone": "SCHENGEN", "limit": limit, "window_days": window, "on": tight["on"], "used": tight["used"],
+            "days_remaining": max(room, 0), "days_over": max(-room, 0), "room": room, "proximity": proximity(room),
+            "earliest_drop_off": tight.get("earliest_drop_off"), "unlogged_in_window": tight.get("unlogged_in_window"),
+            "text": (f"Fullest on {fmt_date(tight['on'])}: {tight['used']} of {limit} days in the {window}-day window, "
+                     + (f"{room} days remaining." if room >= 0 else f"{-room} days past {limit}."))}
+
+
 def plan(log: DayLog, trips: list[dict], as_of: date, rules: list[dict] | None = None) -> dict:
     after = apply_trips(log, trips)
     end = max(parse_date(t["to"]) for t in trips) + timedelta(days=1)
@@ -944,6 +976,7 @@ def plan(log: DayLog, trips: list[dict], as_of: date, rules: list[dict] | None =
         res["years"].append({"tax_year": ty,
                              "uk_midnights_before": before_ref["summary"]["uk_midnights"],
                              "uk_midnights_with_plan": after_ref["summary"]["uk_midnights"],
+                             "uk_days_remaining_with_plan": uk_days_remaining(after_ref),
                              "ties_test_with_plan": {k: after_ref["ties_test"].get(k) for k in ("table", "recorded_ties", "line", "room", "proximity", "room_text", "band_text")},
                              "ninety_day_next_year_with_plan": after_ref["ninety_day_next_year"],
                              "country_tie_with_plan": after_ref["ties"]["ties"]["country"]["log_shows"],
@@ -971,7 +1004,16 @@ def plan(log: DayLog, trips: list[dict], as_of: date, rules: list[dict] | None =
             z = st.get("zone")
             if z == t["country"] or (z == "SCHENGEN" and t["country"] in schengen_members_on(tend)):
                 st["trip"] = f"{t['country']} {t['from']}\u2192{t['to']}"
+                if st.get("room") is not None:
+                    st["days_remaining"] = max(st["room"], 0)
+                    st["days_over"] = max(-st["room"], 0)
                 res["limits_at_trip_end"].append(st)
+    # The Schengen window with the plan in it: every day from the first trip night to the day after the last,
+    # plus the trip-end readings above (which already carry the departure day), and then its fullest point.
+    first = min(parse_date(t["from"]) for t in trips)
+    points = [rolling_status(after, d) for d in daterange(first, end)]
+    points += [st for st in res["limits_at_trip_end"] if st.get("zone") == "SCHENGEN" and st.get("used") is not None]
+    res["schengen_days_remaining_with_plan"] = schengen_days_remaining(points)
     return res
 
 

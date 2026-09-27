@@ -26,6 +26,18 @@ Versions of the Nomad Pro engine (`VERSION`). Newest first.
   * New `tools/tests/test_output_wording.py` renders the CLI summary and plan output, the dashboard, the PDF
     export HTML and the CSV for a finished year and a mid-year log, and fails if any banned word appears.
 
+* Trip what-if: `srt_engine.py plan` (and `plan()`) now state the room left outright instead of leaving the
+  subtraction to the caller. All existing fields are unchanged; these are additions.
+  * `years[].uk_days_remaining_with_plan`: the UK day figure that applies next with the trip included
+    (`figure`, `test`), `uk_days`, `days_remaining` (UK days that still fit below the figure), `days_over`,
+    `room`, `ref`, `cite`, `text`.
+  * `schengen_days_remaining_with_plan`: the fullest point of the 90/180 rolling window with the trip included
+    (`on`, `used`, `limit`, `window_days`, `days_remaining`, `days_over`, `room`, `proximity`,
+    `earliest_drop_off`, `text`).
+  * Every row in `limits_at_trip_end` that has a `room` also carries `days_remaining` and `days_over`.
+  * New helpers `uk_days_remaining()` and `schengen_days_remaining()`; documented in the README
+    ("Trip what-if") and in the `trip-planning` skill.
+
 ## 0.1.3
 
 * Reference card, dashboard and export, redesigned around one visual: a progress bar of UK midnights against the

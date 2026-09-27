@@ -50,7 +50,7 @@ Other overrides, mainly for testing: `NOMAD_PRO_REPO_URL`, `NOMAD_PRO_TARBALL_UR
 | example/ | Fictional per-user data folder: daylog.json, evidence/, documents/ (+ index.json), profile/ |
 | templates/leaving-uk-checklist.md | Leaving-the-UK checklist, every GOV.UK link verified (date recorded) |
 | templates/arriving-uk-checklist.md | Arriving / returning variant |
-| tools/srt_engine.py | Counts: tax years, midnight rule, UK work days >3h, ties, Table A/B bands, proximity, Schengen 90/180, country limits, trip planning, validation; work-day rule (`apply_work_rule`, `work_rule_report`, `srt_engine.py work-rules`); result gate (`result_gate`, `gate_items`, `running_count`): a stage line only for a tax year that has ended with every day logged, prior-year residence recorded and every tie answered, otherwise the year so far and what is missing; the HMRC figures that apply to the year with the room left before each (`applicable_figures`) |
+| tools/srt_engine.py | Counts: tax years, midnight rule, UK work days >3h, ties, Table A/B bands, proximity, Schengen 90/180, country limits, trip planning, validation; work-day rule (`apply_work_rule`, `work_rule_report`, `srt_engine.py work-rules`); result gate (`result_gate`, `gate_items`, `running_count`): a stage line only for a tax year that has ended with every day logged, prior-year residence recorded and every tie answered, otherwise the year so far and what is missing; the HMRC figures that apply to the year with the room left before each (`applicable_figures`); trip modelling with the days still available before the next UK figure and in the Schengen window (`uk_days_remaining`, `schengen_days_remaining`) |
 | tools/render_dashboard.py (+ dashboard_charts.py, assets/) | Self-contained tabbed HTML dashboard (works offline), Evidence column, Reference card at a glance (progress bar, day strip, checklist, detail folded away) |
 | tools/render_pdf.py | "Travel and day log" PDF + CSV per tax year: a single flowing document, no tab UI, Evidence column, the same Reference block as the dashboard |
 | tools/records_pack.py | Records pack zip for one or more tax years: cover index, logs, evidence index, status documents, evidence files, manifest with SHA-256 |
@@ -82,6 +82,16 @@ On a user's box the bot runs the same tools from the user data folder, e.g. `cd 
 Country rules work the same way without needing a flag: given no `--rules`, the tools read `$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`, else this repo's `schema/country-rules.json`. The user's copy is the one `tools/travel_rules_check.py` keeps current, so it wins. A `--rules` path that doesn't exist loads no rules rather than falling back to a different table.
 
 `banned_scan.py` checks prose for wording the template never uses (outcome words, residence conclusions, rulings, deciding verbs, assurances) and for private-data leaks; the full do-not-say list is `SYSTEM.md` section 4. It only has generic leak markers built in; keep any personal terms in a file **outside** the repo and give it with `--private-terms`. HMRC's own verbatim pages under `hmrc/` are exempt from the wording check (they are still scanned for private data), as are GOV.UK scheme and page titles quoted as titles (the non-resident landlord scheme, temporary non-residence). A single line can be exempted with a `banned-list:skip` comment. `tools/tests/test_output_wording.py` runs the same check over what the tools actually render: the CLI summary and plan output, the dashboard, the PDF export HTML and the CSV.
+
+## Trip what-if
+
+`srt_engine.py plan daylog.json --trip CC:FIRST_NIGHT:LAST_NIGHT` (repeat `--trip` per trip) models proposed trips against the log and reports what the counts would be with them in it. Two fields state the room left outright, so nothing downstream has to subtract one figure from another:
+
+* `years[].uk_days_remaining_with_plan` — the UK day figure that applies next to that tax year with the trip included: `figure` (e.g. 16) and `test` (e.g. "first automatic overseas test"), `uk_days` (the count with the trip), `days_remaining` (UK days that still fit **below** the figure, so 15 UK days against 16 leaves 0), `days_over` (days past it, 0 otherwise), plus `room` (the signed form), `ref`, `cite` and a ready-made `text`. `null` if the year has no applicable UK day figure.
+* `schengen_days_remaining_with_plan` — the fullest point of the Schengen 90/180 rolling window with the trip included: `on` (the date it is fullest), `used`, `limit`, `window_days`, `days_remaining`, `days_over`, `room`, `proximity`, `earliest_drop_off` and `text`.
+* Each Schengen or per-entry row in `limits_at_trip_end` also carries `days_remaining` and `days_over` alongside the existing `room`.
+
+Every field that was there before is unchanged; these are additions.
 
 ## Work-day rule
 

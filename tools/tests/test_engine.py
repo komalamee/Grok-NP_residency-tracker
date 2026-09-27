@@ -315,6 +315,51 @@ class Planning(unittest.TestCase):
         self.assertEqual(y["uk_midnights_with_plan"], 36 + 17)
         self.assertEqual(y["ties_test_with_plan"]["room"], 120 - 53)
 
+    def test_uk_days_remaining_is_stated_not_left_as_a_subtraction(self):
+        """15 UK days against the 16-day figure leaves room for 0 more, not 1."""
+        log = make_log(uk_days=10, fill_to=date(2026, 9, 30))
+        res = E.plan(log, [{"country": "GB", "from": "2026-12-18", "to": "2026-12-22"}], date(2026, 9, 30), RULES)
+        r = res["years"][0]["uk_days_remaining_with_plan"]
+        self.assertEqual((r["figure"], r["test"]), (16, "first automatic overseas test"))
+        self.assertEqual(r["uk_days"], 15)
+        self.assertEqual((r["days_remaining"], r["days_over"], r["room"]), (0, 0, 0))
+        self.assertEqual(r["text"], "0 UK days of room before 16: first automatic overseas test")
+
+    def test_uk_days_remaining_reports_days_past_a_figure(self):
+        log = make_log(uk_days=10, ties={"accommodation": "yes"}, fill_to=date(2026, 9, 30))
+        res = E.plan(log, [{"country": "GB", "from": "2026-12-18", "to": "2026-12-31"}], date(2026, 9, 30), RULES)
+        r = res["years"][0]["uk_days_remaining_with_plan"]
+        self.assertEqual(r["uk_days"], 24)                  # 16 is passed, so the ties-test line is next
+        self.assertEqual((r["figure"], r["days_remaining"], r["days_over"]), (121, 96, 0))
+
+    def test_schengen_days_remaining_is_the_fullest_point_of_the_window(self):
+        log = zone_log([("ES", "2026-01-01", "2026-02-09"), ("TH", "2026-02-10", "2026-12-31")])   # 40 Schengen days
+        res = E.plan(log, [{"country": "FR", "from": "2026-03-01", "to": "2026-03-30"}], date(2026, 2, 20), RULES)
+        s = res["schengen_days_remaining_with_plan"]
+        self.assertEqual(s["on"], "2026-03-31")             # the departure day counts: any part of a day
+        self.assertEqual((s["used"], s["limit"]), (71, 90))
+        self.assertEqual((s["days_remaining"], s["days_over"]), (19, 0))
+        self.assertEqual(s["proximity"], "getting close")
+        self.assertIn("19 days remaining", s["text"])
+
+    def test_schengen_days_remaining_when_the_plan_goes_over(self):
+        log = zone_log([("ES", "2026-01-01", "2026-02-19"), ("TH", "2026-02-20", "2026-12-31")])   # 50 Schengen days
+        res = E.plan(log, [{"country": "FR", "from": "2026-03-01", "to": "2026-04-30"}], date(2026, 2, 25), RULES)
+        s = res["schengen_days_remaining_with_plan"]
+        self.assertEqual((s["days_remaining"], s["days_over"]), (0, 22))
+        self.assertEqual(s["proximity"], "over the line")
+
+    def test_existing_plan_fields_are_unchanged(self):
+        log = make_log(uk_days=36, ties={"accommodation": "yes"}, fill_to=date(2026, 9, 30))
+        res = E.plan(log, [{"country": "ES", "from": "2026-12-18", "to": "2027-01-03"}], date(2026, 9, 30), RULES)
+        self.assertEqual(set(res) - {"schengen_days_remaining_with_plan"},
+                         {"trips", "years", "limits_at_trip_end", "l8", "l6"})
+        self.assertLessEqual({"tax_year", "uk_midnights_before", "uk_midnights_with_plan", "ties_test_with_plan",
+                              "ninety_day_next_year_with_plan", "country_tie_with_plan", "work_days_with_plan",
+                              "days_not_logged_or_planned"}, set(res["years"][0]))
+        sch = [x for x in res["limits_at_trip_end"] if x["zone"] == "SCHENGEN"][0]
+        self.assertEqual(sch["days_remaining"], sch["room"])
+
 
 class Validation(unittest.TestCase):
     def test_validate_flags(self):
