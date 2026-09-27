@@ -11,6 +11,9 @@ What it computes
   * RDR3 / RFIG20520 Table A / Table B bands using HMRC's own "more than" boundaries.
   * Distance ("room") to each HMRC figure and a proximity level:
     comfortable room / getting close / at the line / over the line.
+  * The verdict gate: a stage line ("Your log points to ...") only for a tax year that has ended with every day
+    logged, the previous 3 years' residence recorded and every applicable tie answered; otherwise what is still
+    missing (verdict_withheld) and a running count of the year so far (running_count).
   * Schengen 90/180 rolling window (any part of a day counts) with the next
     drop-off date, and other country stay limits from country_rules.json.
   * Trip modelling (planned trips merged into a copy of the log).
@@ -515,6 +518,77 @@ def evaluate_ties(log: DayLog, ty: str, as_of: date, summary: dict | None = None
 
 
 # --------------------------------------------------------------------------
+# Verdict gate and running count
+# --------------------------------------------------------------------------
+# A stage line ("Your log points to non-resident under the <test>") is a statement about a whole tax year, so it
+# is withheld until the year can be counted in full: the year has ended, every day in it is logged, residence for
+# the previous 3 tax years is recorded and every applicable tie is answered. Until then the tools return what is
+# still missing and a running count of the year so far, which decides nothing.
+def verdict_gate(s: dict, t: dict, table: str | None) -> list[str]:
+    """Reasons a stage line must NOT be returned. Empty list = every condition met."""
+    reasons = []
+    if not s["complete"]:
+        reasons.append(f"the tax year is still running (it ends on {fmt_date(s['end'])})")
+    n = s["unlogged"]
+    if n:
+        reasons.append(f"{n} day{'s are' if n != 1 else ' is'} not logged")
+    if table is None:
+        reasons.append("residence for the previous 3 tax years is not recorded")
+    unanswered = [k for k, v in t["ties"].items()
+                  if not (k == "country" and not v.get("applies")) and v.get("user_answer") not in ("yes", "no")]
+    if unanswered:
+        reasons.append("ties not answered: " + ", ".join(k.replace("_", "-") for k in unanswered))
+    return reasons
+
+
+def running_count(s: dict, table: str | None, ties_block: dict, overseas_claim: str = "not_answered") -> dict:
+    """The year so far against the HMRC figures that apply to it, and the year-end date. Never a verdict.
+
+    `room` on each figure follows the convention used everywhere else in the engine: the number of days that can
+    still be added before the figure is reached."""
+    days = s["uk_midnights"]
+    figs = []
+    if table in ("A", None):
+        figs.append({"figure": 16, "counted": days, "unit": "UK days", "test": "first automatic overseas test",
+                     "text": "fewer than 16 UK days: first automatic overseas test"
+                             + ("" if table == "A" else " (applies if you were UK resident in 1 or more of the previous 3 tax years)"),
+                     "ref": "RFIG20120"})
+    if table in ("B", None):
+        figs.append({"figure": 46, "counted": days, "unit": "UK days", "test": "second automatic overseas test",
+                     "text": "fewer than 46 UK days: second automatic overseas test"
+                             + ("" if table == "B" else " (applies if you were not UK resident in any of the previous 3 tax years)"),
+                     "ref": "RFIG20130"})
+    if overseas_claim == "yes":
+        figs.append({"figure": 91, "counted": days, "unit": "UK days", "test": "third automatic overseas test",
+                     "text": "fewer than 91 UK days: third automatic overseas test (on your own recorded full-time overseas work answer)",
+                     "ref": "RFIG20140"})
+        figs.append({"figure": 31, "counted": s["uk_work_days_over_3h"], "unit": "UK work days",
+                     "test": "third automatic overseas test",
+                     "text": "fewer than 31 UK work days of more than 3 hours: third automatic overseas test",
+                     "ref": "RFIG20140"})
+    line = ties_block.get("line")
+    if line is not None and line != 182:
+        n = ties_block.get("recorded_ties", 0)
+        ties = f"{n} recorded tie{'s' if n != 1 else ''}"
+        figs.append({"figure": line + 1, "counted": ties_block.get("uk_days_used", days), "unit": "UK days",
+                     "test": f"ties-test line for {ties}",
+                     "text": f"more than {line} UK days: RDR3 Table {ties_block.get('table')} pairs that with {ties}",
+                     "ref": "RFIG20520"})
+    figs.append({"figure": 183, "counted": days, "unit": "UK days", "test": "first automatic UK test",
+                 "text": "183 UK days: first automatic UK test", "ref": "RFIG20320"})
+    for f in figs:
+        f["room"] = f["figure"] - 1 - f["counted"]
+        f["room_text"] = (f"{f['room']} {f['unit']} of room before {f['figure']}: {f['test']}" if f["room"] >= 0
+                          else f"{-f['room']} {f['unit']} past {f['figure']}: {f['test']}")
+        f["cite"] = cite(f["ref"])
+    text = (f"Your log so far: {days} UK midnight{'s' if days != 1 else ''} from {fmt_date(s['start'])} to {fmt_date(s['counted_to'])} "
+            f"({s['logged']} of {s['days_in_year_to_date']} days logged). "
+            f"The tax year {'ended' if s['complete'] else 'ends'} on {fmt_date(s['end'])}.")
+    return {"uk_midnights": days, "counted_to": s["counted_to"], "year_ends": s["end"], "logged": s["logged"],
+            "days_in_year_to_date": s["days_in_year_to_date"], "figures": figs, "text": text}
+
+
+# --------------------------------------------------------------------------
 # SRT reference view (stage order, no verdicts)
 # --------------------------------------------------------------------------
 def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = None) -> dict:
@@ -626,6 +700,13 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
     if auto_uk and days < 183:
         notes.append("Automatic UK tests 2 and 3 rely on your own answers; not recorded as 'no': " + ", ".join(auto_uk) + ". No pointer is shown until they are.")
 
+    # The verdict gate: no stage line for a year that cannot yet be counted in full, whatever the pointer above says.
+    withheld = verdict_gate(s, t, table)
+    running = None
+    if withheld:
+        stage_lines = []
+        running = running_count(s, table, ties_block, ft)
+
     # Next year's 90-day tie
     next_ty = f"{int(ty[:4]) + 1}/{str(int(ty[:4]) + 2)[-2:]}"
     ninety_next = {"for_tax_year": next_ty, "uk_days": days, "room": 90 - days, "proximity": proximity(90 - days, thresholds),
@@ -633,7 +714,8 @@ def srt_reference(log: DayLog, ty: str, as_of: date, thresholds: dict | None = N
                             else f"{days - 90} days over the 90-day line: {ty} would count towards a 90-day tie in {next_ty} and the year after"),
                    "cite": cite("RFIG20570")}
     return {"tax_year": ty, "summary": s, "ties": t, "ties_test": ties_block, "third_automatic_overseas": third,
-            "automatic_uk_open": auto_uk, "stage_lines": stage_lines, "notes": notes, "figures": figures,
+            "automatic_uk_open": auto_uk, "stage_lines": stage_lines, "verdict_withheld": withheld,
+            "running_count": running, "notes": notes, "figures": figures,
             "ninety_day_next_year": ninety_next, "work_tie": t["ties"]["work"], "l6": L6}
 
 
