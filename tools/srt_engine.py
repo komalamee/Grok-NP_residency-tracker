@@ -524,6 +524,9 @@ def evaluate_ties(log: DayLog, ty: str, as_of: date, summary: dict | None = None
 # is withheld until the year can be counted in full: the year has ended, every day in it is logged, residence for
 # the previous 3 tax years is recorded and every applicable tie is answered. Until then the tools return what is
 # still missing and a running count of the year so far, which decides nothing.
+TIE_LABELS = {"ninety_day": "90-day"}   # the rest are already the words the product uses
+
+
 def verdict_gate(s: dict, t: dict, table: str | None) -> list[str]:
     """Reasons a stage line must NOT be returned. Empty list = every condition met."""
     reasons = []
@@ -537,7 +540,7 @@ def verdict_gate(s: dict, t: dict, table: str | None) -> list[str]:
     unanswered = [k for k, v in t["ties"].items()
                   if not (k == "country" and not v.get("applies")) and v.get("user_answer") not in ("yes", "no")]
     if unanswered:
-        reasons.append("ties not answered: " + ", ".join(k.replace("_", "-") for k in unanswered))
+        reasons.append("ties not answered: " + ", ".join(TIE_LABELS.get(k, k) for k in unanswered))
     return reasons
 
 

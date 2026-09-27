@@ -77,6 +77,11 @@ class VerdictGate(unittest.TestCase):
         self.assertEqual(ref["stage_lines"], [])
         self.assertIn("ties not answered: family", ref["verdict_withheld"])
 
+    def test_unanswered_ties_are_named_as_the_product_names_them(self):
+        log = make_log(TY, uk_days=5, ties={"ninety_day": "not_answered", "country": "unsure"})
+        ref = E.srt_reference(log, TY, YEAR_END)
+        self.assertIn("ties not answered: 90-day, country", ref["verdict_withheld"])
+
     def test_finished_year_without_prior_years_returns_no_verdict(self):
         log = make_log(TY, uk_days=5, prior_resident="unsure")
         ref = E.srt_reference(log, TY, YEAR_END)
