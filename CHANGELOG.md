@@ -2,6 +2,20 @@
 
 Versions of the Nomad Pro engine (`VERSION`). Newest first.
 
+## 0.1.2
+
+* Verdict gate: `srt_reference()` (and so `summary`, the dashboard, the PDF export and the records pack) returns a
+  stage line ("Your log points to non-resident under the …") only once the tax year has ended, every day in it is
+  logged, residence for the previous 3 tax years is recorded and every applicable tie is answered. Otherwise
+  `stage_lines` is empty, `verdict_withheld` lists what is still missing, and `running_count` gives the year so far
+  (UK midnights, days logged, the year-end date) with the room left before each HMRC figure that applies to it.
+  Previously an empty or mid-year log could return a stage line.
+* Dashboard and PDF export show the running count, what is still missing and the room before each figure where the
+  stage line would go while the gate is closed (both now use `render_common.pointer_block`).
+* New tests: `tools/tests/test_verdict_gate.py` (empty log mid-year, mid-year fully logged, finished year with gaps,
+  a single unlogged day, unanswered tie, prior years unrecorded, complete year still returns its line, which figures
+  apply per table and per recorded claim, dashboard and PDF output, CLI summary).
+
 ## 0.1.1
 
 * Country rules: without `--rules`, the tools (`srt_engine.py`, `render_pdf.py`, `render_dashboard.py`,

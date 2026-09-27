@@ -168,6 +168,23 @@ def evidence_html(row: dict | None, prefix: str = "", maxn: int = 4) -> str:
     return "; ".join(parts)
 
 
+def pointer_block(ref: dict, disc: str = "disc") -> str:
+    """The engine's stage line(s), or - while the verdict gate is closed - the running count and what is missing.
+
+    `disc` is the class the caller's stylesheet gives the small lines under the bold one ('disc' here, 'd' in the PDF)."""
+    if ref["stage_lines"]:
+        return "".join(f"<div class='pointer'><b>{esc(l['text'])}</b><div class='{disc}'>{esc(l['disclaimer'])}</div></div>"
+                       for l in ref["stage_lines"])
+    rc = ref.get("running_count")
+    if not rc:
+        return ""
+    missing = "; ".join(ref.get("verdict_withheld") or [])
+    return (f"<div class='pointer'><b>{esc(rc['text'])}</b>"
+            f"<div class='{disc}'>{esc('; '.join(f['room_text'] for f in rc['figures']))}.</div>"
+            + (f"<div class='{disc}'>No result for {esc(ref['tax_year'])} yet, still to record: {esc(missing)}.</div>" if missing else "")
+            + f"<div class='{disc}'>A count from your entries. It does not determine residence.</div></div>")
+
+
 def evidence_text(row: dict | None) -> str:
     """CSV form: 'label <link>' or pointer text, separated by ' | '."""
     return " | ".join(f"{x['label']} <{x['href']}>" if x["href"] else x["label"] for x in evidence_entries(row))
