@@ -7,6 +7,8 @@ description: Use when the user asks for the dashboard, an overview, a picture of
 
 `python3 ~/nomad-pro-engine/tools/render_dashboard.py daylog.json dashboard.html --as-of <today> --kb hmrc/pages` produces a single self-contained HTML file (no external scripts). Send it to the user; optionally send a screenshot.
 
+Run it from the user data folder and leave `--rules` off: the stay-limit cards then come from the user's own `country-rules.json` (`$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`), which the weekly travel-rules watch keeps current, rather than the engine's shipped table.
+
 ## What it shows (verdict-free)
 
 * Global: tax-year selector, "Recorded to {date}", generated time in the user's timezone.

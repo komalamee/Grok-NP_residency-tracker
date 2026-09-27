@@ -21,7 +21,7 @@ The Python tools, schemas, templates and a baseline copy of HMRC's SRT guidance 
        cp -rn ~/nomad-pro-engine/hmrc ~/nomad-pro-data/
        cp -n ~/nomad-pro-engine/schema/country-rules.json ~/nomad-pro-data/country-rules.json
 
-   The user's `hmrc/` copy is the one the weekly HMRC watch updates; the engine's copy stays as shipped so updates apply cleanly.
+   The user's `hmrc/` copy is the one the weekly HMRC watch updates, and their `country-rules.json` is the one the weekly travel-rules watch updates; the engine's copies stay as shipped so updates apply cleanly. Both copies must exist before any counts are run: if `country-rules.json` is missing from the data folder, copy it now.
 4. Record the engine version in the user's `daylog.json` profile note or your memory ("engine 0.1.0 installed 3 Nov 2026").
 
 ## Weekly update check (with the weekly HMRC guidance routine)
@@ -35,5 +35,6 @@ The Python tools, schemas, templates and a baseline copy of HMRC's SRT guidance 
 
 * Run tools from the user data folder with the engine path, e.g. `cd ~/nomad-pro-data && python3 ~/nomad-pro-engine/tools/srt_engine.py validate daylog.json`.
 * `--kb hmrc` (the user's copy) is the normal knowledge base; without `--kb` the tools fall back to `$NOMAD_PRO_KB`, then to `~/nomad-pro-engine/hmrc`.
+* Country rules need no flag: without `--rules` the tools read `$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`, else the engine's shipped `schema/country-rules.json`. That way the weekly travel-rules watch's updates are the ones counted. Give `--rules` only to read a different table on purpose.
 * If a tool is missing or errors, say so; never estimate a figure the engine didn't return.
 * Never send the user's data anywhere as part of setup or updates. The install only downloads.
