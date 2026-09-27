@@ -17,14 +17,19 @@ What it computes
 
 Usage
   python3 srt_engine.py summary  DAYLOG.json [--as-of YYYY-MM-DD] [--rules RULES.json]
-  python3 srt_engine.py plan     DAYLOG.json --trip CC:FIRST_NIGHT:LAST_NIGHT [...] [--rules RULES.json]
+  python3 srt_engine.py plan     DAYLOG.json --trip CC:FIRST_NIGHT:LAST_NIGHT [--trip ...] [--rules RULES.json]
   python3 srt_engine.py validate DAYLOG.json
+
+--trip is given once per trip. Without --rules the country rules come from the user's own copy
+($NOMAD_PRO_DATA/country-rules.json, else ~/nomad-pro-data/country-rules.json) and only then from the
+engine's shipped schema/country-rules.json, so the weekly travel-rules watch's updates are the ones counted.
 """
 from __future__ import annotations
 
 import argparse
 import copy
 import json
+import os
 import re
 import sys
 from collections import Counter, OrderedDict
@@ -99,7 +104,6 @@ DEFAULT_KB_ROOT = ENGINE_ROOT / "hmrc"
 
 def default_kb(explicit: str | Path | None = None) -> Path | None:
     """The mirror to use: --kb if given, else $NOMAD_PRO_KB, else the engine's own hmrc/ (None if absent)."""
-    import os
     for cand in (explicit, os.environ.get("NOMAD_PRO_KB"), DEFAULT_KB_ROOT):
         if cand:
             p = Path(cand).expanduser()
@@ -651,6 +655,31 @@ def set_rules(rules: list[dict]) -> None:
     for r in rules:
         if r.get("zone") == "SCHENGEN" and r.get("members"):
             _SCHENGEN = {m["code"]: m.get("from") for m in r["members"]}
+
+
+# The engine ships a baseline country-rules table at <engine>/schema/country-rules.json. The user's own copy lives
+# in their data folder and is the one the weekly travel-rules watch updates, so it wins unless --rules says otherwise.
+SHIPPED_RULES_FILE = ENGINE_ROOT / "schema" / "country-rules.json"
+USER_RULES_FILE = "~/nomad-pro-data/country-rules.json"
+RULES_HELP = ("country-rules JSON; default: $NOMAD_PRO_DATA/country-rules.json, else ~/nomad-pro-data/country-rules.json, "
+              "else <engine>/schema/country-rules.json")
+
+
+def default_rules_path(explicit: str | Path | None = None) -> Path | None:
+    """The country-rules file to use, in order: --rules if given (None if that path does not exist, so a wrong
+    path never silently reads a different table), else $NOMAD_PRO_DATA/country-rules.json, else
+    ~/nomad-pro-data/country-rules.json, else the engine's shipped schema/country-rules.json (None if absent)."""
+    if explicit:
+        p = Path(explicit).expanduser()
+        return p if p.exists() else None
+    data_dir = os.environ.get("NOMAD_PRO_DATA")
+    cands = [Path(data_dir) / "country-rules.json"] if data_dir else []
+    cands += [Path(USER_RULES_FILE), SHIPPED_RULES_FILE]
+    for c in cands:
+        p = Path(c).expanduser()
+        if p.exists():
+            return p
+    return None
 
 
 def load_rules(path: str | Path | None) -> list[dict]:
@@ -1269,7 +1298,7 @@ def main(argv=None):
     ap.add_argument("cmd", choices=["summary", "plan", "validate", "work-rules"])
     ap.add_argument("daylog")
     ap.add_argument("--as-of", default=date.today().isoformat())
-    ap.add_argument("--rules", default=str(Path(__file__).resolve().parent.parent / "schema" / "country-rules.json"))
+    ap.add_argument("--rules", help=RULES_HELP)
     ap.add_argument("--kb", help="HMRC mirror (root or pages/ dir) for citation dates; default: $NOMAD_PRO_KB, else <engine>/hmrc")
     ap.add_argument("--trip", action="append", default=[], help="CC:FIRST_NIGHT:LAST_NIGHT")
     a = ap.parse_args(argv)
@@ -1288,7 +1317,7 @@ def main(argv=None):
             out["years"][ty] = {"counts": rep["counts"], "disagree": rep["disagree"], "answered_differently": [x["date"] for x in rep["answered_differently"]]}
         print(json.dumps(out, indent=1, ensure_ascii=False, default=_default))
         return 0
-    rules = load_rules(a.rules if a.rules and Path(a.rules).exists() else None)
+    rules = load_rules(default_rules_path(a.rules))
     as_of = parse_date(a.as_of)
     if a.cmd == "summary":
         print(json.dumps(full_summary(log, as_of, rules), indent=1, default=_default))

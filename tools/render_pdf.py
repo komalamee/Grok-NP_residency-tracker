@@ -5,6 +5,8 @@
 
 v3 styling matches the HTML dashboard (see CSS note below).
 Produces "Travel and day log YYYY-YY.pdf" (or "... (to D Mon YYYY).pdf" for a year in progress) and the matching CSV.
+Without --rules the country rules come from the user's own copy ($NOMAD_PRO_DATA/country-rules.json, else
+~/nomad-pro-data/country-rules.json), else the engine's shipped schema/country-rules.json.
 Requires: pip install weasyprint
 """
 from __future__ import annotations
@@ -547,13 +549,13 @@ def main(argv=None):
     ap.add_argument("--tax-year", required=True)
     ap.add_argument("--out-dir", default=".")
     ap.add_argument("--as-of", default=date.today().isoformat())
-    ap.add_argument("--rules", default=str(Path(__file__).resolve().parent.parent / "schema" / "country-rules.json"))
+    ap.add_argument("--rules", help=E.RULES_HELP)
     ap.add_argument("--kb", help="HMRC mirror (root or pages/ dir); default: $NOMAD_PRO_KB, else <engine>/hmrc")
     ap.add_argument("--html-only", action="store_true")
     ap.add_argument("--data-root", help="user data folder holding evidence/ (default: the day log's folder)")
     a = ap.parse_args(argv)
     E.load_hmrc_dates(E.default_kb(a.kb))
-    E.load_rules(a.rules if Path(a.rules).exists() else None)
+    E.load_rules(E.default_rules_path(a.rules))
     log = E.DayLog.load(a.daylog)
     as_of = E.parse_date(a.as_of)
     out = Path(a.out_dir)

@@ -3,6 +3,9 @@
 
   python3 render_dashboard.py DAYLOG.json OUT.html [--as-of YYYY-MM-DD] [--rules RULES.json] [--kb HMRC_MIRROR (default: <engine>/hmrc)]
 
+Without --rules the country rules come from the user's own copy ($NOMAD_PRO_DATA/country-rules.json, else
+~/nomad-pro-data/country-rules.json), else the engine's shipped schema/country-rules.json.
+
 v3 layout (26 Sep 2026) mirrors the Nomad Pro iOS app dashboard (its dashboard screen
 and components): location card, tax-year selector and a 3D teal status button, "Key metrics" KPI
 progress cards, AlertCards, country doughnut, monthly bar tracks, location timeline rows, section headings outside
@@ -482,12 +485,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("daylog"); ap.add_argument("out")
     ap.add_argument("--as-of", default=date.today().isoformat())
-    ap.add_argument("--rules", default=str(Path(__file__).resolve().parent.parent / "schema" / "country-rules.json"))
+    ap.add_argument("--rules", help=E.RULES_HELP)
     ap.add_argument("--kb", help="HMRC mirror (root or pages/ dir); default: $NOMAD_PRO_KB, else <engine>/hmrc")
     ap.add_argument("--data-root", help="user data folder holding evidence/ and documents/ (default: the day log's folder)")
     a = ap.parse_args(argv)
     E.load_hmrc_dates(E.default_kb(a.kb))
-    rules = E.load_rules(a.rules)
+    rules = E.load_rules(E.default_rules_path(a.rules))
     log = E.DayLog.load(a.daylog)
     root = Path(a.data_root or Path(a.daylog).parent)
     idx = root / "documents" / "index.json"

@@ -14,6 +14,8 @@ Zip layout ("Records pack 2024-25 and 2025-26 (prepared 14 May 2026).zip"):
 
 Record-keeping only. The pack collects the user's own records; it does not determine residence.
 Links inside the PDFs to evidence/ and documents/ are relative, so they work once the zip is extracted.
+Without --rules the country rules come from the user's own copy ($NOMAD_PRO_DATA/country-rules.json, else
+~/nomad-pro-data/country-rules.json), else the engine's shipped schema/country-rules.json.
 """
 from __future__ import annotations
 
@@ -217,11 +219,11 @@ def main(argv=None):
     ap.add_argument("--out-dir", default=".")
     ap.add_argument("--data-root")
     ap.add_argument("--as-of", default=date.today().isoformat())
-    ap.add_argument("--rules", default=str(Path(__file__).resolve().parent.parent / "schema" / "country-rules.json"))
+    ap.add_argument("--rules", help=E.RULES_HELP)
     ap.add_argument("--kb", help="HMRC mirror (root or pages/ dir); default: $NOMAD_PRO_KB, else <engine>/hmrc")
     a = ap.parse_args(argv)
     E.load_hmrc_dates(E.default_kb(a.kb))
-    E.load_rules(a.rules if Path(a.rules).exists() else None)
+    E.load_rules(E.default_rules_path(a.rules))
     print(build(a.daylog, a.tax_years, a.out_dir, a.data_root, E.parse_date(a.as_of)))
 
 
