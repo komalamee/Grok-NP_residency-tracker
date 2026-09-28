@@ -4,6 +4,8 @@ The engine behind the **Nomad Pro – UK Residency Tracker** Grok Bot template: 
 
 A Grok Bot marketplace template can only carry prose (standing instructions, skills, routines). Everything that has to run lives here. On first use, each user's bot downloads this repo into `~/nomad-pro-engine` and runs the tools from there; the user's own records stay in a separate data folder (`~/nomad-pro-data/` by default) and never leave their box.
 
+**The published bot template lives in [bot/](bot/README.md).** That folder holds v2 as published on 28 September 2026 ([x.ai/bot/A5PJWWubWq6RSITiu_tdG](https://x.ai/bot/A5PJWWubWq6RSITiu_tdG)): the 17 skills, the `create_bot_share_json` arguments, `build.py` that regenerates them, the listing copy and the packaging notes. The root `skills/`, `routines.md`, `LISTING.md` and `SYSTEM.md` below are the older v1-era copies that shipped with the engine; `bot/` supersedes them for anything the published bot does.
+
 ## What it is, and what it is not
 
 Nomad Pro is a **record-keeping** tool. It keeps a dated day-by-day log of where someone was at midnight, whether they worked in the UK for more than 3 hours, and where the supporting records sit; it counts those days against the figures HMRC publishes for the SRT and against visa and stay limits abroad; and it produces a dashboard, a "Travel and day log" PDF/CSV and a records pack.
