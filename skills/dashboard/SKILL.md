@@ -9,10 +9,10 @@ description: Use when the user asks for the dashboard, an overview, a picture of
 
 Run it from the user data folder and leave `--rules` off: the stay-limit cards then come from the user's own `country-rules.json` (`$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`), which the weekly travel-rules watch keeps current, rather than the engine's shipped table.
 
-## What it shows (verdict-free)
+## What it shows (counts only, no residence outcome)
 
 * Global: tax-year selector, "Recorded to {date}", generated time in the user's timezone.
-* **Overview:** cards for UK midnights, UK work days (>3 hours) + unsure, days logged / not yet logged, top 3 countries by midnights, Schengen days in the 180 days to today, upcoming trips. A **reference figures strip** ("HMRC's RDR3 uses these day counts: 16, 46, 91, 121, 183. Your UK midnights so far: X.") with the distance to each, captioned "A count from your entries. It does not determine residence." Ties-test reference (Table A/B band, room text and proximity chip), approved stage lines with L4 where the engine returns them, a needs-attention list, midnights by country, midnights per month (not-logged days shown in amber outline), timeline.
+* **Overview:** cards for UK midnights, UK work days (>3 hours) + unsure, days logged / not yet logged, top 3 countries by midnights, Schengen days in the 180 days to today, upcoming trips. A **reference figures strip** ("HMRC's RDR3 uses these day counts: 16, 46, 91, 121, 183. Your UK midnights so far: X.") with the distance to each, captioned "Educational, not tax advice. It records days; it doesn't decide your residence." Ties-test reference (Table A/B band, room text and proximity chip), approved stage lines with L4 where the engine returns them, a needs-attention list, midnights by country, midnights per month (not-logged days shown in amber outline), timeline.
 * **Log health:** not logged, no record pointer, inferred, owner statements, conflicts, edits after the day, questions HMRC could ask.
 * **UK days:** visits table (first/last UK night, midnights, UK work days, accommodation, pointers) and nights per UK accommodation.
 * **Ties inputs:** your answer · what your log shows · last reviewed · HMRC page · status (Recorded yes / Recorded no / Not answered / Your answer and your log differ – review).
@@ -33,6 +33,6 @@ The dashboard is the interactive, tabbed HTML (self-contained: CSS, JS, fonts an
 ## Style rules
 
 Neutral palette (slate, stone, navy). No green/red good/bad colours. Amber only for logging gaps and counts approaching a figure. <!-- banned-list:start -->
-No word on any surface says resident, non-resident (outside the approved stage sentence), safe, pass, fail, proof, compliant or anything similar.
+No word on any surface says resident, non-resident, verdict, determine, safe, pass, fail, proof, compliant or anything similar. The only result wording is the engine's own stage line ("Your log matches the …").
 <!-- banned-list:end -->
 Run `~/nomad-pro-engine/tools/banned_scan.py` on template changes.

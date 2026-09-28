@@ -42,7 +42,7 @@ For each shortlisted place (3–5), research live and cite source + date for eve
 
 No source, no figure. If data is old or thin, say so.
 
-## 4. The answer
+## 4. What you send back
 
 One short table, then two lines per place:
 

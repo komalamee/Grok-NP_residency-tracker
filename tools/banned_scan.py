@@ -3,10 +3,12 @@
 
   python3 banned_scan.py KIT_DIR [--private-terms FILE]
 
-1. Banned phrases (SYSTEM.md sections 3-4 + product decisions). The only sanctioned use of "non-resident" is the approved
-   template "Your log points to non-resident under the <test>". Text between the markers
+1. Banned phrases (SYSTEM.md sections 3-4 + product decisions). "non-resident" is banned outright: the stage line the
+   engine returns names the test ("Your log matches the <test> for this tax year"), never a residence status.
+   Text between the markers
    <!-- banned-list:start --> and <!-- banned-list:end --> is the bot's own do-not-say reference list and is skipped,
-   as is this file (it has to contain the patterns). A short list of official GOV.UK/HMRC names (OFFICIAL_TERMS, e.g.
+   as is any single line carrying "banned-list:skip" (for a changelog line or a test that has to name the old
+   wording) and this file (it has to contain the patterns). A short list of official GOV.UK/HMRC names (OFFICIAL_TERMS, e.g.
    "temporary non-residence", "non-resident landlord", GOV.UK's "Safety and security" section) is exempt because
    those are titles being quoted, not statements about the user. PREFERENCE_TERMS exempts the listing's concierge line
    where "safety" is something the user says matters to them when choosing a place (a preference, never an outcome).
@@ -33,9 +35,9 @@ BANNED = [
     r"evidence pack", r"hmrc[- ]proof", r"\bcertified\b", r"\bguaranteed?\b", r"no surprises", r"year-end surprises",
     r"never accidentally", r"stands or fails", r"all clear", r"tests? failed", r"\bgamified\b", r"life admin support",
     r"183 was never the line", r"hundreds of pages", r"67[34] pages", r"self[- ]assessment deadline", r"january deadline",
-    r"31 january", r"[£$]\s?\d", r"\bverdict:", r"\bat risk\b", r"\bdanger\b",
+    r"31 january", r"[£$]\s?\d", r"\bverdicts?\b", r"\bdetermin(e|es|ed|ing|ation)\b", r"\bthe answer\b",
+    r"\bat risk\b", r"\bdanger\b",
 ]
-NON_RESIDENT_OK = re.compile(r"points to non-resident under the", re.I)
 # Official names quoted from GOV.UK / HMRC (scheme, chapter and section titles), never used about the user's position.
 # They are removed from a line before matching. Keep this list short and exact.
 OFFICIAL_TERMS = re.compile(r"temporary non-residence|non-resident landlords?( scheme)?|capital-gains-tax-for-non-residents|"
@@ -46,7 +48,7 @@ PREFERENCE_TERMS = re.compile(r"what matters to you, whether it's rent, food, sa
 # (this file is public): keep them in a private terms file outside the repo and pass it with --private-terms.
 PRIVATE_DEFAULT = ["/users/", "~/library", "icloud drive", "macbook", "obsidian", "c:\\users\\"]
 # HMRC's own guidance, mirrored verbatim under hmrc/ (pages, history, generated catalogue/manifest/change log), uses
-# words such as "qualify" and "non-resident" as HMRC wrote them (HMRC-NOTICE.md lists HMRC's page titles).
+# words such as "qualify", "determine" and "non-resident" as HMRC wrote them (HMRC-NOTICE.md lists HMRC's page titles).
 # Those files are checked for private data only.
 VERBATIM_HMRC = re.compile(r"(^|/)(hmrc/(pages/|history/|catalogue\.md$|manifest\.json$|CHANGES\.md$)|HMRC-NOTICE\.md$)")
 EXTS = {".md", ".py", ".json", ".html", ".txt", ".csv", ".ts", ".js", ".yaml", ".yml"}
@@ -76,15 +78,13 @@ def scan(root: Path, private_terms: list[str]):
                 pat = ((r"(?<![a-z0-9])" if t[:1].isalnum() else "") + re.escape(t) + (r"(?![a-z0-9])" if t[-1:].isalnum() else ""))
                 if re.search(pat, low):
                     private_hits.append((str(f.relative_to(root)), n, t, line.strip()[:140]))
-            if skip or verbatim:
+            if skip or verbatim or "banned-list:skip" in line:
                 continue
             for pat in BANNED:
                 for m in re.finditer(pat, line, re.I):
                     banned_hits.append((str(f.relative_to(root)), n, m.group(0), line.strip()[:140]))
             for m in re.finditer(r"non[- ]resident", line, re.I):
-                ctx = line[max(0, m.start() - 12): m.end() + 10]
-                if not NON_RESIDENT_OK.search(ctx):
-                    banned_hits.append((str(f.relative_to(root)), n, "non-resident (outside approved template)", line.strip()[:140]))
+                banned_hits.append((str(f.relative_to(root)), n, "non-resident", line.strip()[:140]))
     return banned_hits, private_hits
 
 

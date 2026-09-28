@@ -6,7 +6,7 @@ KpiProgressCard rings (track #EAE3D8, round caps), CountryDoughnutChart (stroke 
 centre, legend rows "55d 32%"), MonthlyStackedChart (rounded #EDE7DE bar tracks, total above), LocationTimelineChart
 (one row per stay: full country name, dates, day count, pill track with the coloured bar).
 
-Colour carries category, never a verdict. UK = app coral (theme.chartColours['United Kingdom']); other countries use the
+Colour carries category, never an outcome. UK = app coral (theme.chartColours['United Kingdom']); other countries use the
 app chart colours where they do not collide with the reserved amber. Proximity uses one scale everywhere:
 more than 20 days of room = calm (teal), 6-20 = amber, 0-5 or over = deep ochre. No green/red status colours.
 Hover text lives in data-tip attributes (dashboard.js); SVG <title> is the no-JS fallback.
@@ -502,7 +502,7 @@ def status_block(ref, log, *, svg=None, icon_fn=None, disc="disc", detail_wrap=N
               + detail_extra)
     return (f"<div class='ref'>{head}{bar}{strip}{status}<ul class='check'>{checks}</ul>"
             f"{detail_wrap(detail) if detail_wrap else detail}"
-            f"<p class='{disc}'>A count from your entries. It does not determine residence.</p></div>")
+            f"<p class='{disc}'>Educational, not tax advice. It records days; it doesn't decide your residence.</p></div>")
 
 
 # ------------------------------------------------------------------ icons: Feather set (the app uses @expo/vector-icons Feather)

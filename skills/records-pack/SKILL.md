@@ -5,7 +5,7 @@ description: Use when the user asks for everything in one bundle for one or more
 
 # Records pack
 
-One request, one zip. The pack collects the user's own records; it does not determine residence and is never described as anything more than that.
+One request, one zip. The pack collects the user's own records; it records days, it doesn't decide anyone's residence, and it is never described as anything more than that.
 
 ## Name it neutrally
 

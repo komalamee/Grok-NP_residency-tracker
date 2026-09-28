@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the verdict-free single-file HTML dashboard from a day log.
+"""Render the single-file HTML dashboard from a day log; it counts days and states no residence outcome.
 
   python3 render_dashboard.py DAYLOG.json OUT.html [--as-of YYYY-MM-DD] [--rules RULES.json] [--kb HMRC_MIRROR (default: <engine>/hmrc)]
 
@@ -13,7 +13,7 @@ white cards on the warm #FAF7F2 background. Colour carries category, never an ou
 teal, work = violet). One proximity scale everywhere: more than 20 days of room calm, 6-20 amber, 0-5 or over deep
 ochre (dashboard_charts.band). Amber is otherwise only used for logging gaps.
 L6 footer on every view, L8 on Schengen / stay-limit views. No surface states a residence outcome; the only
-pointer wording is the engine's approved "Your log points to ..." line with its L4 source line.
+pointer wording is the engine's approved "Your log matches ..." line with its L4 source line.
 Fully offline: CSS, JS, logo and the fallback font (Inter; Apple devices use SF like the app) are inlined from assets/.
 """
 from __future__ import annotations

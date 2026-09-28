@@ -12,7 +12,7 @@ Zip layout ("Records pack 2024-25 and 2025-26 (prepared 14 May 2026).zip"):
   documents/                           status documents covering the selected years (copied verbatim)
   manifest.json                        sha256 of every file in the pack
 
-Record-keeping only. The pack collects the user's own records; it does not determine residence.
+Record-keeping only. The pack collects the user's own records; it records days and decides no one's residence.
 Links inside the PDFs to evidence/ and documents/ are relative, so they work once the zip is extracted.
 Without --rules the country rules come from the user's own copy ($NOMAD_PRO_DATA/country-rules.json, else
 ~/nomad-pro-data/country-rules.json), else the engine's shipped schema/country-rules.json.
@@ -187,7 +187,7 @@ def build(daylog: str, years: list[str], out_dir: str, data_root: str | None = N
     contents = "".join(f"<li><b>01 Travel and day logs/</b>{esc(b)}.pdf and .csv</li>" for _, b in logs)
     cover = f"""<!doctype html><html lang='en-GB'><head><meta charset='utf-8'><title>{esc(shown)}</title><style>{RP.CSS}{CSS_EXTRA}</style></head><body>
 <div class='cover' style='height:auto'><div class='band'><h1>{esc(shown)}</h1><div class='sub'>{esc(log.profile.get('display_name', ''))} \u00b7 prepared {esc(E.fmt_date(as_of))} \u00b7 Nomad Pro \u00b7 UK Residency Tracker</div></div></div>
-<p>This pack collects the travel and work records kept in Nomad Pro for the tax years below, with the evidence each day points to and the status documents on file. It is a record of what was logged, not a determination of residence.</p>
+<p>This pack collects the travel and work records kept in Nomad Pro for the tax years below, with the evidence each day points to and the status documents on file. Educational, not tax advice. It records days; it doesn't decide your residence.</p>
 <h3>Contents</h3><ol class='toc'>{contents}<li><b>02 Evidence index/</b>Evidence index.pdf and .csv (each day and its evidence)</li>
 <li><b>03 Status documents/</b>Documents index.pdf and .csv</li><li><b>evidence/</b> {len(copied)} evidence file(s) referenced by these years</li>
 <li><b>documents/</b> {sum(1 for d in docs if d.get('file') and not d.get('_missing'))} status document file(s)</li><li><b>manifest.json</b> SHA-256 of every file</li></ol>
