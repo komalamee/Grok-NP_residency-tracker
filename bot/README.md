@@ -33,15 +33,19 @@ python3 build.py        # needs PyYAML
 
 `build.py` reads the 17 `skills/<name>/SKILL.md` files (front-matter `description` plus the body), the six routine
 job texts out of `TEMPLATE-PACKAGE.md`, and its own inline copies of the plugins, memories and profile, then
-overwrites `create_bot_share_json.args.json`. On this tree it reproduces the published file byte for byte. It also
-prints the size and every match of its private-data pattern (owner names, emails, Mac paths, long opaque strings)
-so a leak shows up before the args are staged.
+overwrites `create_bot_share_json.args.json`. It also prints the size and every match of its private-data pattern
+(owner names, emails, Mac paths, long opaque strings) so a leak shows up before the args are staged.
+
+The calendar review's routine slug is `calendar-review`, not `nomad-pro-calendar-review` as the other Nomad Pro
+slugs would suggest: that is the slug the published v6 card was staged with, so the args in this folder are now
+exactly what was staged. The other five slugs are `nomad-pro-check-in`, `weekly-travel-rules-watch`,
+`weekly-hmrc-guidance-watch`, `year-end-lockdown` and `monthly-records-backup`.
 
 ## Size limit
 
 Staging rejected a 103,056-byte args payload as too large; 98.0 KB had gone through, so the cap sits somewhere
-between **about 98 and 103 KB**. The published version 6 is well under it: **91,348 bytes** compact (91,900 on
-disk at `indent=1`). `docs/TRIM-LOG.md` records what was cut to get there and checks that no behaviour was lost.
+between **about 98 and 103 KB**. The published version 6 is well under it: **91,338 bytes** compact (91,890 on
+disk at `indent=1`; `docs/TRIM-LOG.md` quotes 91,348, which counted the longer calendar-review slug). `docs/TRIM-LOG.md` records what was cut to get there and checks that no behaviour was lost.
 Keep new prose inside that budget, and re-run `build.py` to see the byte count.
 
 ## Checks
@@ -73,7 +77,7 @@ private-data check still runs over them.
   gone on the do-not-say list.
 * **One-tap check-in**, a Sunday "where you stand" line, heads-ups once per band as a figure gets close, one-tap
   catch-up for missed days, and trip "what if" answered from the engine's `days_remaining`.
-* **Six routines packed** (v1's set, two slugs renamed): daily check-in, Monday travel-rules watch, Wednesday HMRC
+* **Six routines packed** (v1's set, three slugs renamed): daily check-in, Monday travel-rules watch, Wednesday HMRC
   guidance watch, calendar review while the calendar is connected, 7 April year-end lockdown, monthly records
   backup. Packed routines run silently until the first count; the watches stay quiet unless something changed.
 * **The travel log Sheet is the single source.** One Google Sheet, "Nomad Pro – Travel log", with tabs Summary,
@@ -84,7 +88,7 @@ private-data check still runs over them.
   used Calendar, Gmail and Drive too, but whether its template packed them was never recorded.
 * **8 memories** kept from v1's twelve; four were dropped as out of date or not job facts, and the engine-repo one
   no longer names the owner (`docs/V1-V2-COMPARISON.md` has the item-by-item reasons).
-* **Args trimmed** from 103,056 to 91,348 bytes after staging refused the larger payload; wording only.
+* **Args trimmed** from 103,056 to 91,338 bytes after staging refused the larger payload; wording only.
 
 ### v1 — <https://x.ai/bot/QUBmv77N0RIAlXTUktubY> (retired)
 

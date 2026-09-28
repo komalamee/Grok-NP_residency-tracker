@@ -170,7 +170,7 @@
    "content": "Wednesdays at 09:00 in the owner's timezone. Run `hmrc-guidance-watch`, then the weekly update check in `engine-setup`. First run (or before the first count): baseline only, no message. Message only if a page's wording changed or an engine update failed, 3 lines at most; never \"no changes\"."
   },
   {
-   "slug": "nomad-pro-calendar-review",
+   "slug": "calendar-review",
    "name": "Nomad Pro calendar review",
    "description": "While Google Calendar is connected: reads it (and Gmail, if connected) and proposes the nights since the last review for the user to confirm.",
    "content": "Only while Google Calendar is connected. Sundays at 18:00 in the owner's timezone by default (cron 5 18 * * 0); fortnightly, monthly (5 18 1 * *) or quarterly (5 18 6 1,4,7,10 *) if the owner chooses. Rebuild from the Sheet, then run the calendar review in `daily-checkin-and-catchup`: read the calendar (and Gmail, if connected) for the period since the last review, plus any unlogged days before it. Send nothing if Google Calendar isn't connected, there is no day log, the review isn't due for the owner's rhythm, or every day is already logged with a record. Otherwise one message, \"Here's what I think your week was. Is this right?\", one line per night (grouped into stays for a month or quarter); write days only after the owner confirms them."
