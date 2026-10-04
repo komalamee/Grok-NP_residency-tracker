@@ -1,38 +1,36 @@
 ---
 name: dashboard
-description: Use when the user asks for the dashboard, an overview, a picture of their year, charts, or "where do I stand" in counts; also after onboarding and after each export.
+description: Use only when the user asks for the dashboard, an overview, a picture of their year or charts of their UK and Schengen days. Never on a schedule, after onboarding or after an export.
 ---
 
 # Dashboard
 
-`python3 ~/nomad-pro-engine/tools/render_dashboard.py daylog.json dashboard.html --as-of <today> --kb hmrc/pages` produces a single self-contained HTML file (no external scripts). Send it to the user; optionally send a screenshot.
+Build it only when the user asks. Rebuild `daylog.json` from the latest log first, then from the user data folder:
 
-Run it from the user data folder and leave `--rules` off: the stay-limit cards then come from the user's own `country-rules.json` (`$NOMAD_PRO_DATA/country-rules.json`, else `~/nomad-pro-data/country-rules.json`), which the weekly travel-rules watch keeps current, rather than the engine's shipped table.
+`python3 ~/nomad-pro-engine/tools/render_dashboard.py daylog.json dashboard.html --as-of <today> --data-root . --source "Source: Nomad Pro – Travel log, rows <first>–<last>, generated <date>"`
 
-## What it shows (counts only, no residence outcome)
+It writes one self-contained HTML file (CSS, scripts and charts inline; works offline). `--design classic` still renders the earlier layout; `--no-link-check` skips opening document links (they are then shown untested).
 
-* Global: tax-year selector, "Recorded to {date}", generated time in the user's timezone.
-* **Overview:** cards for UK midnights, UK work days (>3 hours) + unsure, days logged / not yet logged, top 3 countries by midnights, Schengen days in the 180 days to today, upcoming trips. A **reference figures strip** ("HMRC's RDR3 uses these day counts: 16, 46, 91, 121, 183. Your UK midnights so far: X.") with the distance to each, captioned "Educational, not tax advice. It records days; it doesn't decide your residence." Ties-test reference (Table A/B band, room text and proximity chip), approved stage lines with L4 where the engine returns them, a needs-attention list, midnights by country, midnights per month (not-logged days shown in amber outline), timeline.
-* **Log health:** not logged, no record pointer, inferred, owner statements, conflicts, edits after the day, questions HMRC could ask.
-* **UK days:** visits table (first/last UK night, midnights, UK work days, accommodation, pointers) and nights per UK accommodation.
-* **Ties inputs:** your answer · what your log shows · last reviewed · HMRC page · status (Recorded yes / Recorded no / Not answered / Your answer and your log differ – review).
-* **Work days:** log with hours (only if given) and notes; counters shown against 31 and 40 as figures HMRC uses; a short **Work-day rule** card quoting the rule the user agreed (version, dates, agreed date, parts still to confirm), how many UK days were set by the rule, by calendar exceptions and by their answers, and any days that differ from the rule.
-* **Schengen & stay limits:** rolling-window chart against 90 with planned trips, earliest drop-off date, longest stay from tomorrow, a card per country rule with source and date checked, planned-trip projections. L8.
-* **Upcoming trips & rule watch**, **Records** (sources and pointer index), **Export**.
-* Footer on every view: L6.
+## The design (engine 0.1.5)
 
-## Evidence and documents
+The tabbed SRT Residency dashboard, used as it is: **Overview**, **UK Days**, **Schengen**, **Full Timeline**, **Work Days**, **SRT Status**, **Documentation**, and a tax-year switch. Don't restyle it or add panels.
 
-* **Day log** tab: one row per date with an **Evidence** column: clickable links to emails (Gmail) and to stored files in `evidence/`, otherwise the pointer text. Use `--data-root <user data folder>` so file links resolve from where the HTML is saved.
-* **Records** tab: record sources, pointer index and the status documents index (`documents/index.json`) with file/link/pointer and status.
+## Rules
+
+1. Same tabs and design every time.
+2. Rebuild from the latest day log only when the user asks. No daily rebuild or routine.
+3. Neutral record labels. No surface states a residence outcome; the per-test marks and the pathway show only for a finished tax year. While the selected year is unfinished they are hidden and the figures show with "Year not finished; figures so far".
+4. Counts only. HMRC's day bands (16, 46, 91, 121, 183) are shown as reference; ties are a plain count; work days are a count with HMRC's figures as reference. No UK day limit, room or days left is worked out from the ties band, on the page or in chat.
+5. **Your own limit** is blank until the user sets it on the page. It is saved in their browser and goes into `profile.user_limit` when they import their notes.
+6. **Documentation** links only to documents that open (each http(s) link is tested at build time). Anything else is plain text saying where it lives. No dead links.
+7. Notes are 2–4 index bullets per row: stay city, which records exist, flights. No text blobs, purchase detail, addresses or internal IDs.
+8. Each row has a **Your note** box saved in the browser. **Export my notes** downloads a JSON file; `render_dashboard.py daylog.json --import-notes <file>` merges it into the day log (the newer edit wins; a backup is written first).
+9. A place the user marks private shows as "<city> (family home)": set `private: true`, `city` and optionally `private_label` on its `accommodation_register` entry, or add `profile.private_places: [{"match": "...", "city": "...", "label": "..."}]`. Other places show at city level only.
+
+## Sharing
+
+The dashboard goes to the user only. If they want an image to post on X, crop it to the neutral parts (counts and charts, no SRT or HMRC wording), or tell them the image carries that wording.
 
 ## Dashboard vs PDF
 
-The dashboard is the interactive, tabbed HTML (self-contained: CSS, JS, fonts and charts inline, works offline). The "Travel and day log" PDF is a single flowing document with no tabs or buttons. Don't send the dashboard as a substitute for the PDF export.
-
-## Style rules
-
-Neutral palette (slate, stone, navy). No green/red good/bad colours. Amber only for logging gaps and counts approaching a figure. <!-- banned-list:start -->
-No word on any surface says resident, non-resident, verdict, determine, safe, pass, fail, proof, compliant or anything similar. The only result wording is the engine's own stage line ("Your log matches the …").
-<!-- banned-list:end -->
-Run `~/nomad-pro-engine/tools/banned_scan.py` on template changes.
+The "Travel and day log" PDF (`render_pdf.py`) is unchanged and is the document to send; the dashboard is not a substitute for it.

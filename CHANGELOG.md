@@ -2,6 +2,43 @@
 
 Versions of the Nomad Pro engine (`VERSION`). Newest first.
 
+## 0.1.5
+
+* New default dashboard design: the tabbed SRT Residency dashboard (`tools/srt_dashboard.py`, page shell
+  `tools/assets/srt_dashboard.html`, Chart.js and its date adapter vendored under `tools/assets/vendor/` with
+  their MIT notices). Tabs: Overview, UK Days, Schengen, Full Timeline, Work Days, SRT Status, Documentation, plus
+  a tax-year switch. `render_dashboard.py` keeps its name and arguments and renders it by default;
+  `--design classic` renders the earlier layout, which the records pack and existing tests still use.
+  * Counts only. HMRC's day bands (16, 46, 91, 121, 183) are reference; ties are a plain count; work days are a
+    count with HMRC's figures as reference. Nothing on the page works out a UK day limit, room or days left from
+    the ties band. The per-test marks (met / not met, triggered, stage reached, ticks and crosses) and the
+    pathway show only for a finished tax year. While the selected year is unfinished they are hidden on every
+    tab and the figures show with the note "Year not finished; figures so far".
+  * Your own limit: blank until the user sets it on the page; saved in the browser and imported into
+    `profile.user_limit`.
+  * Documentation: an http(s) link is shown only if it opens when the dashboard is built; anything else is plain
+    text saying where it lives. `--no-link-check` skips the test (links are then shown untested).
+  * Notes: 2–4 index bullets per row (stay city, which records exist, flights), built from the log; no
+    addresses, IDs or purchase detail. Each row has a "Your note" box saved in the browser and an
+    "Export my notes" JSON download; `render_dashboard.py DAYLOG --import-notes FILE` merges it into the day log
+    (newer edit wins, backup first).
+  * Private places: an `accommodation_register` entry with `private: true` (plus `city`, optional
+    `private_label`), or a `profile.private_places` rule, shows as "<city> (family home)" everywhere. Every
+    other place is shown at city level only.
+  * `--source` adds the Source line under the L6 footer.
+* Schema: `accommodation_register[].private/city/private_label`, `profile.private_places`, `profile.user_limit`,
+  `profile.links`, `tax_years.*.dashboard_note`, top-level `user_notes`. All optional.
+* `banned_scan.py` exempts `tools/assets/vendor/` (third-party code) from the banned-phrase check; it is still
+  scanned for private data.
+* New `tools/tests/test_srt_dashboard.py`: tabs and year switch, no outcome wording (rule 3), no limit from the
+  ties band (rule 4), own limit (rule 5), working links only (rule 6), notes bullets (rule 7), notes import
+  (rule 8), private places (rule 9), a template with no baked-in data, and a headless-browser render of each
+  tab (skipped without Chrome).
+* The PDF, CSV and records pack are unchanged.
+* Bot skills: `dashboard` rewritten to these rules (build only when asked; image for X cropped to the neutral
+  parts or flagged); `export-travel-day-log` keeps `user_notes`, `user_limit` and private places across Sheet
+  rebuilds and gives the dashboard its Source line through `--source`.
+
 ## 0.1.4
 
 * Wording guardrails. Four more words and phrases join the do-not-say list in `SYSTEM.md` section 4 and are out

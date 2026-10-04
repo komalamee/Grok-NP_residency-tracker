@@ -1,17 +1,22 @@
 ---
 name: dashboard
-description: "Nomad Pro dashboard: use when a Nomad Pro user asks for their dashboard, charts or a picture of their UK days and stay limits for a tax year, and after each Nomad Pro export."
+description: "Nomad Pro dashboard: use only when a Nomad Pro user asks for their dashboard, charts or a picture of their UK and Schengen days for a tax year."
 ---
 # Dashboard
 
-Engine `~/nomad-pro-engine` (run `engine-setup` first if missing). From `~/nomad-pro-data`:
-`python3 ~/nomad-pro-engine/tools/render_dashboard.py daylog.json dashboard.html --as-of <today> --kb hmrc/pages --data-root .`
-Rebuild `daylog.json` from the Sheet first (`export-travel-day-log`). It makes one self-contained, offline HTML file. Add the Source line ("Source: Nomad Pro – Travel log, rows <first>–<last>, generated <date>") before `</body>`, under the L6 footer, and an `Outputs` row (type "Dashboard"). Send it to the user only, with a screenshot of the overview as the inline image and a one-line caption.
+Build it only when the user asks: never on a schedule or after an export. Engine `~/nomad-pro-engine` (`engine-setup` if missing). Rebuild `daylog.json` from the Sheet (`export-travel-day-log`), then from `~/nomad-pro-data`:
+`python3 ~/nomad-pro-engine/tools/render_dashboard.py daylog.json dashboard.html --as-of <today> --data-root . --source "Source: Nomad Pro – Travel log, rows <first>–<last>, generated <date>"`
+One offline HTML file: Overview, UK Days, Schengen, Full Timeline, Work Days, SRT Status, Documentation, tax-year switch. Don't restyle or add to it. Add an `Outputs` row (type "Dashboard"); send it to the user only, with an Overview screenshot and a one-line caption.
 
-What the engine renders (counts only, no residence outcome): tax-year selector, "Recorded to {date}"; overview cards (UK midnights, UK work days >3 hours + unsure, days logged / not logged, top countries, Schengen last 180, upcoming trips); the reference-figures strip ("Educational, not tax advice. It records days; it doesn't decide your residence."); ties-test band with room and proximity; the running count for a year in progress, or the stage line with L4 only where the engine returns one (core rules §3); log health and questions HMRC could ask; UK visits; ties inputs vs the log; work days against 31 and 40 with the Work-day rule card; Schengen and stay-limit charts with L8; Day log with a clickable **Evidence** column; Records tab; L6 footer on every view.
+* Counts only. HMRC day bands (16/46/91/121/183) and work-day figures are reference; ties are a plain count. Never give a UK day limit, room or days left from the ties band, on the page or in chat.
+* "Your own limit" stays blank unless the user sets it on the page.
+* Notes are 2–4 index bullets per row (stay city, which records exist, flights); no addresses, IDs or purchases. The user's "Your note" boxes save in their browser. When they send their "Export my notes" file, run `render_dashboard.py daylog.json --import-notes <file>` (it also saves their own limit).
+* A place the user marks private (`private: true` and `city` on its `accommodation_register` entry, or `profile.private_places`) shows as "<city> (family home)".
+* Documentation links only to documents that open; anything else is plain text saying where it lives.
+* Image for X: crop to the counts and charts, without the SRT and HMRC wording, or warn the user it carries that wording.
 
-The dashboard is not a substitute for the "Travel and day log" PDF (`export-travel-day-log`).
+Not a substitute for the "Travel and day log" PDF.
 
 <!-- banned-list:start -->
-Style: neutral palette (slate, stone, navy); no green/red good/bad; amber only for logging gaps and counts approaching a figure. No surface states a residence status or uses outcome words (core rules §7). The only result wording is the engine's own stage line ("Your log matches the …").
+No surface states a residence status or uses outcome words (core rules §7); stage labels stay as the engine prints them.
 <!-- banned-list:end -->

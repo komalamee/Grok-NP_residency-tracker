@@ -1,6 +1,6 @@
 ---
 name: onboarding
-description: "Nomad Pro setup chunks: use when a Nomad Pro user's job needs a setup answer (prior UK years, UK ties, work-day rule, passports, connections, calendar rules, backups, backfill), or when they ask Nomad Pro to set up, redo or complete their profile."
+description: "Nomad Pro setup chunks: use when a Nomad Pro user's job needs a setup answer (prior UK years, UK ties, work-day rule, passports, connections, calendar rules, backups, backfill), or when they ask Nomad Pro to set up, redo or complete their profile, or to check their setup."
 ---
 # Onboarding (setup in chunks)
 
@@ -25,6 +25,8 @@ Calendar connected (after message 3, or on connecting): agree calendar rules in 
 **H. Record sources and status documents:** where records sit (email bookings, calendar, bank apps, maps timeline, photos); the Evidence column (link, stored file or pointer); offer to file status documents (contract, tenancy end, P85 acknowledgement) via `evidence-and-documents`.
 
 **I. Trips and backfill:** upcoming trips → `planned_trips` + `travel-rules-watch`. Backfill before 6 April only for an earlier year they want ("Where were you sleeping in …?"): a record pointer or their dated statement (`attested`) per day; unknown days stay not logged; UK work via `srt_engine.apply_work_rule` (no rule: ask; unanswered stays `unsure`); travel days get both countries.
+
+**J. Setup check** ("check my setup"; once after a connection is added): one line each, counts and links only: engine version (failing: `engine-setup`); travel log Sheet; Calendar (events, last 7 days); Gmail (booking emails since 6 April); Drive folder; routines on, with times (missing: create; a duplicate: ask); last backup. A failure: what it stops and the fix.
 
 After a chunk that changes days or answers: `validate`, `summary`, report only what moved, as bars.
 

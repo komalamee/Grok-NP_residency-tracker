@@ -200,6 +200,18 @@
                     }
                   }
                 }
+              },
+              "private": {
+                "type": "boolean",
+                "description": "The user marked this place private: the dashboard shows it only as '<city> (<private_label>)', never its label or address"
+              },
+              "city": {
+                "type": "string",
+                "description": "City shown for a private place, e.g. 'Leeds'"
+              },
+              "private_label": {
+                "type": "string",
+                "description": "Shown after the city for a private place; default 'family home'"
               }
             }
           }
@@ -412,6 +424,18 @@
               },
               "notes": {
                 "type": "object"
+              },
+              "dashboard_note": {
+                "type": "object",
+                "description": "Optional note in the user's own words shown on the dashboard's SRT tab for this year",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -666,6 +690,95 @@
               }
             }
           }
+        },
+        "private_places": {
+          "type": "array",
+          "description": "Free-text places the user marked private (matched in midnight_place or accommodation_label); shown as '<city> (<label>)'",
+          "items": {
+            "type": "object",
+            "required": [
+              "match",
+              "city"
+            ],
+            "properties": {
+              "match": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "city": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string",
+                "description": "default 'family home'"
+              },
+              "accommodation_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "user_limit": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "'Your own limit' set by the user on the dashboard (UK days per tax year). Blank unless the user sets it; never computed",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 366
+            },
+            "unit": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "imported_at": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            }
+          }
+        },
+        "links": {
+          "type": "array",
+          "description": "Links the user gave for their own documents (e.g. their Sheet). The dashboard shows a link only if it opens when built",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "url"
+            ],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "desc": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     },
@@ -871,6 +984,55 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "user_notes": {
+      "type": "array",
+      "description": "The user's own notes from the dashboard ('Your note', imported with render_dashboard.py --import-notes). key = kind:start..end",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "start",
+          "end",
+          "text"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "stay",
+              "work"
+            ]
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imported_at": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
           }
         }
       }

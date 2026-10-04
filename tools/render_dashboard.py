@@ -2,6 +2,12 @@
 """Render the single-file HTML dashboard from a day log; it counts days and states no residence outcome.
 
   python3 render_dashboard.py DAYLOG.json OUT.html [--as-of YYYY-MM-DD] [--rules RULES.json] [--kb HMRC_MIRROR (default: <engine>/hmrc)]
+        [--data-root DIR] [--source "Source: ..."] [--no-link-check] [--design srt|classic]
+  python3 render_dashboard.py DAYLOG.json --import-notes NOTES.json      (merge "Export my notes" into the day log)
+
+From engine 0.1.5 the default design is the tabbed SRT Residency dashboard (srt_dashboard.py: Overview, UK Days,
+Schengen, Full Timeline, Work Days, SRT Status, Documentation, tax-year switch). `--design classic` renders the
+v3 layout described below, which render() still returns for the records pack and the tests.
 
 Without --rules the country rules come from the user's own copy ($NOMAD_PRO_DATA/country-rules.json, else
 ~/nomad-pro-data/country-rules.json), else the engine's shipped schema/country-rules.json.
@@ -481,20 +487,36 @@ def render(log: E.DayLog, as_of: date, rules: list[dict], prefix: str = "", docu
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("daylog"); ap.add_argument("out")
+    ap.add_argument("daylog"); ap.add_argument("out", nargs="?")
     ap.add_argument("--as-of", default=date.today().isoformat())
     ap.add_argument("--rules", help=E.RULES_HELP)
     ap.add_argument("--kb", help="HMRC mirror (root or pages/ dir); default: $NOMAD_PRO_KB, else <engine>/hmrc")
     ap.add_argument("--data-root", help="user data folder holding evidence/ and documents/ (default: the day log's folder)")
+    ap.add_argument("--design", choices=["srt", "classic"], default="srt", help="srt (default): tabbed SRT Residency dashboard; classic: v3 layout")
+    ap.add_argument("--source", default="", help='source line for the footer, e.g. "Source: Nomad Pro – Travel log, rows 2–180, generated 4 Oct 2026"')
+    ap.add_argument("--no-link-check", action="store_true", help="srt design: do not open document links to check they work (links are then shown untested)")
+    ap.add_argument("--import-notes", metavar="NOTES.json", help='merge an "Export my notes" file into the day log (backs it up first)')
     a = ap.parse_args(argv)
+    if a.import_notes:
+        import srt_dashboard as SD
+        res = SD.import_notes(a.import_notes, a.daylog)
+        print(f"imported {res['notes_merged']} note(s); your own limit: {res['user_limit']}; backup: {Path(res['backup']).name}")
+        if not a.out:
+            return
+    if not a.out:
+        ap.error("OUT.html is required unless --import-notes is given")
     E.load_hmrc_dates(E.default_kb(a.kb))
-    rules = E.load_rules(E.default_rules_path(a.rules))
     log = E.DayLog.load(a.daylog)
     root = Path(a.data_root or Path(a.daylog).parent)
     idx = root / "documents" / "index.json"
     docs = json.loads(idx.read_text(encoding="utf-8"))["documents"] if idx.exists() else []
-    prefix = file_prefix(str(root), str(Path(a.out).parent))
-    Path(a.out).write_text(render(log, E.parse_date(a.as_of), rules, prefix, docs), encoding="utf-8")
+    if a.design == "srt":
+        import srt_dashboard as SD
+        Path(a.out).write_text(SD.render(log, E.parse_date(a.as_of), docs, a.source, check_links=not a.no_link_check), encoding="utf-8")
+    else:
+        rules = E.load_rules(E.default_rules_path(a.rules))
+        prefix = file_prefix(str(root), str(Path(a.out).parent))
+        Path(a.out).write_text(render(log, E.parse_date(a.as_of), rules, prefix, docs), encoding="utf-8")
     print(a.out)
 
 
