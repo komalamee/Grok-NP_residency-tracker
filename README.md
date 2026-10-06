@@ -53,7 +53,7 @@ Other overrides, mainly for testing: `NOMAD_PRO_REPO_URL`, `NOMAD_PRO_TARBALL_UR
 | templates/leaving-uk-checklist.md | Leaving-the-UK checklist, every GOV.UK link verified (date recorded) |
 | templates/arriving-uk-checklist.md | Arriving / returning variant |
 | tools/srt_engine.py | Counts: tax years, midnight rule, UK work days >3h, ties, Table A/B bands, proximity, Schengen 90/180, country limits, trip planning, validation; work-day rule (`apply_work_rule`, `work_rule_report`, `srt_engine.py work-rules`); result gate (`result_gate`, `gate_items`, `running_count`): a stage line only for a tax year that has ended with every day logged, prior-year residence recorded and every tie answered, otherwise the year so far and what is missing; the HMRC figures that apply to the year with the room left before each (`applicable_figures`); trip modelling with the days still available before the next UK figure and in the Schengen window (`uk_days_remaining`, `schengen_days_remaining`) |
-| tools/render_dashboard.py (+ dashboard_charts.py, assets/) | Self-contained tabbed HTML dashboard (works offline), Evidence column, Reference card at a glance (progress bar, day strip, checklist, detail folded away) |
+| tools/render_dashboard.py (+ srt_dashboard.py, assets/srt_dashboard.html, assets/vendor/) | Self-contained tabbed SRT Residency dashboard (works offline): Overview, UK Days, Schengen, Full Timeline, Work Days, SRT Status, Documentation, tax-year switch; HMRC day bands as reference only, ties as a count, the user's own limit (blank until they set it), editable notes with export and `--import-notes`, private places shown as "<city> (family home)". `--design classic` (+ dashboard_charts.py) renders the earlier layout |
 | tools/render_pdf.py | "Travel and day log" PDF + CSV per tax year: a single flowing document, no tab UI, Evidence column, the same Reference block as the dashboard |
 | tools/records_pack.py | Records pack zip for one or more tax years: cover index, logs, evidence index, status documents, evidence files, manifest with SHA-256 |
 | tools/travel_rules_check.py | GOV.UK entry-requirements watch + plan alerts |
@@ -74,7 +74,8 @@ Other overrides, mainly for testing: `NOMAD_PRO_REPO_URL`, `NOMAD_PRO_TARBALL_UR
 Try the tools on the fictional data (the HMRC mirror is found automatically at `hmrc/`; give `--kb` or set `NOMAD_PRO_KB` to use another copy):
 
     python3 tools/srt_engine.py summary example/daylog.json --as-of 2026-07-31
-    python3 tools/render_dashboard.py example/daylog.json /tmp/dashboard.html --as-of 2026-07-31 --data-root example
+    python3 tools/render_dashboard.py example/daylog.json /tmp/dashboard.html --as-of 2026-07-31 --data-root example --source "Source: example"
+    python3 tools/render_dashboard.py example/daylog.json --import-notes nomad-pro-notes-2026-07-31.json   # merge exported notes
     python3 tools/render_pdf.py example/daylog.json --tax-year 2025/26 --out-dir /tmp/np-out --as-of 2026-07-31 --data-root example
     python3 tools/records_pack.py example/daylog.json --tax-years 2025/26 --out-dir /tmp/np-out --data-root example --as-of 2026-07-31
     python3 tools/srt_engine.py work-rules example/daylog.json --as-of 2026-07-31

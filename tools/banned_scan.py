@@ -14,6 +14,7 @@
    where "safety" is something the user says matters to them when choosing a place (a preference, never an outcome).
    Files mirrored verbatim from HMRC under hmrc/ (pages/, history/, catalogue.md, manifest.json, CHANGES.md) and the
    HMRC page-title list in HMRC-NOTICE.md are HMRC's own wording and are exempt from the banned-phrase check (they are still scanned for private data).
+   So are the third-party libraries vendored under tools/assets/vendor/ (Chart.js and its date adapter, MIT; minified code, not prose).
 2. Private-data scan: terms that would only appear if a real user's data leaked into the template
    (names, addresses, employers, calendars, Mac paths). Only generic markers are built in; pass a person's own
    terms with --private-terms FILE (one per line) and keep that file outside the repo.
@@ -61,7 +62,10 @@ def scan(root: Path, private_terms: list[str]):
         if not f.is_file() or f.suffix not in EXTS or f.resolve() == me or "__pycache__" in f.parts:
             continue
         skip = False
-        verbatim = bool(VERBATIM_HMRC.search(root.resolve().name + "/" + f.relative_to(root).as_posix()))
+        rel = f.relative_to(root).as_posix()
+        # HMRC's own pages, and third-party minified libraries inlined by the dashboard (tools/assets/vendor/, MIT):
+        # neither is our prose, so only the private-data scan applies to them
+        verbatim = bool(VERBATIM_HMRC.search(root.resolve().name + "/" + rel)) or ("tools/assets/vendor/" in "/" + rel or rel.startswith("assets/vendor/"))
         for n, line in enumerate(f.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             if "banned-list:start" in line:
                 skip = True

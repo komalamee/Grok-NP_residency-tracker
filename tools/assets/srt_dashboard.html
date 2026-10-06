@@ -1,0 +1,2493 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Error guard: if any script below fails, show a visible banner instead of a silently dead page. -->
+    <script id="js-error-banner-guard">
+    window.addEventListener('error', function (e) {
+        function show() {
+            if (document.getElementById('js-error-banner')) return;
+            var d = document.createElement('div');
+            d.id = 'js-error-banner';
+            d.setAttribute('role', 'alert');
+            d.style.cssText = 'margin:12px auto;max-width:1100px;padding:12px 16px;border:1px solid #dc2626;border-radius:10px;background:#fef2f2;color:#991b1b;font:14px/1.45 -apple-system,BlinkMacSystemFont,sans-serif';
+            d.textContent = 'Dashboard script error: ' + (e.message || 'unknown') + (e.lineno ? ' (line ' + e.lineno + ')' : '') + '. Figures below may be incomplete. Ask your assistant to rebuild the dashboard.';
+            document.body.insertBefore(d, document.body.firstChild);
+        }
+        if (document.body) show(); else document.addEventListener('DOMContentLoaded', show);
+    });
+    </script>
+    <title>@@NP_TITLE@@</title>
+    <!-- Vendored locally (no CDN) so the dashboard works offline as a single file.
+         Chart.js v4.5.1 + chartjs-adapter-date-fns v3.0.0 — byte-identical to the jsDelivr builds (SRI sha384 verified). -->
+    <!--@@NP_CHART_LIBS@@-->
+    <style>
+        /* ============================================================
+           DESIGN TOKENS — light (default) + prefers-color-scheme: dark
+           Presentation only. Data/logic live in the <script> below.
+           ============================================================ */
+        :root {
+            color-scheme: light dark;
+            --bg: #f5f6f8;
+            --surface: #ffffff;
+            --surface-2: #f8f9fb;
+            --surface-3: #f1f3f6;
+            --border: #e4e7ec;
+            --border-strong: #d0d5dd;
+            --text: #101828;
+            --text-2: #475467;
+            --text-3: #667085;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-soft: #eef2ff;
+            --accent-text: #3730a3;
+            --ok: #16a34a;
+            --ok-text: #067647;
+            --ok-soft: #ecfdf3;
+            --ok-border: #abefc6;
+            --warn: #f59e0b;
+            --warn-text: #b54708;
+            --warn-soft: #fffaeb;
+            --warn-border: #fedf89;
+            --bad: #dc2626;
+            --bad-text: #b42318;
+            --bad-soft: #fef3f2;
+            --bad-border: #fecdca;
+            --track: #eaecf0;
+            --shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
+            --shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
+            --radius: 14px;
+            --radius-sm: 10px;
+            --gap: 20px;
+            --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+            /* Legacy aliases (kept so any older inline styles still resolve) */
+            --bg-card: var(--surface);
+            --text-light: var(--text-2);
+            --text-muted: var(--text-3);
+            --green-dark: var(--ok-text);
+            --green-light: var(--ok-soft);
+            --yellow-light: var(--warn-soft);
+            --yellow: var(--warn-border);
+            --red: var(--bad-text);
+            --red-light: var(--bad-soft);
+            --blue-dark: var(--accent);
+            --blue-light: var(--accent-soft);
+            --blue: var(--accent);
+            --warning: var(--warn-text);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0b0e14;
+                --surface: #131722;
+                --surface-2: #171c28;
+                --surface-3: #1d2330;
+                --border: #262d3b;
+                --border-strong: #343c4d;
+                --text: #eef0f4;
+                --text-2: #b4bccb;
+                --text-3: #8791a3;
+                --accent: #818cf8;
+                --accent-hover: #a5b4fc;
+                --accent-soft: rgba(129, 140, 248, .14);
+                --accent-text: #c7d2fe;
+                --ok: #22c55e;
+                --ok-text: #4ade80;
+                --ok-soft: rgba(34, 197, 94, .12);
+                --ok-border: rgba(34, 197, 94, .35);
+                --warn: #f59e0b;
+                --warn-text: #fbbf24;
+                --warn-soft: rgba(245, 158, 11, .12);
+                --warn-border: rgba(245, 158, 11, .35);
+                --bad: #ef4444;
+                --bad-text: #f87171;
+                --bad-soft: rgba(239, 68, 68, .12);
+                --bad-border: rgba(239, 68, 68, .35);
+                --track: #252c3a;
+                --shadow-sm: none;
+                --shadow: 0 1px 0 rgba(255, 255, 255, .02);
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            font-family: var(--font);
+            font-feature-settings: "cv11", "ss01";
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.55;
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { font-family: var(--mono); font-size: .88em; background: var(--surface-3); padding: 1px 5px; border-radius: 5px; }
+        strong { font-weight: 600; }
+        .num, td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+        .container { max-width: 1240px; margin: 0 auto; padding: 28px 28px 40px; }
+
+        /* ============================== Header */
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; flex-wrap: wrap; margin-bottom: 18px;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .brand-mark {
+            width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+            background: var(--accent); color: #fff;
+            display: grid; place-items: center; font-weight: 700; font-size: 15px; letter-spacing: -.02em;
+        }
+        .header h1 { font-size: 19px; font-weight: 700; letter-spacing: -.015em; line-height: 1.25; }
+        .header .subtitle { font-size: 13px; color: var(--text-3); }
+        .header .current-location {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 500; color: var(--text-2);
+            padding: 6px 12px; background: var(--surface); border: 1px solid var(--border);
+            border-radius: 999px; box-shadow: var(--shadow-sm);
+        }
+        .header .current-location::before {
+            content: ""; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft);
+        }
+
+        /* ============================== Sticky nav: tabs + year flipper */
+        .navbar {
+            position: sticky; top: 0; z-index: 20;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            margin: 0 -28px 22px; padding: 10px 28px;
+            background: color-mix(in srgb, var(--bg) 86%, transparent);
+            -webkit-backdrop-filter: saturate(160%) blur(10px); backdrop-filter: saturate(160%) blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+        .tabs {
+            display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
+            background: var(--surface-3); border-radius: 11px; padding: 3px; min-width: 0;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab {
+            padding: 7px 13px; border-radius: 8px; cursor: pointer;
+            font: 500 13px/1.2 var(--font); color: var(--text-2);
+            white-space: nowrap; border: none; background: none; transition: background .15s, color .15s;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
+        .tab:focus-visible, .ty-btn:focus-visible, .srt-detail-toggle:focus-visible, summary:focus-visible {
+            outline: 2px solid var(--accent); outline-offset: 2px;
+        }
+
+        .tax-year-selector {
+            display: inline-flex; gap: 2px; padding: 3px; border-radius: 11px;
+            background: var(--surface-3); flex-shrink: 0;
+        }
+        .ty-btn {
+            padding: 6px 12px; border: none; border-radius: 8px; background: none; cursor: pointer;
+            font: 500 13px/1.2 var(--font); color: var(--text-2); font-variant-numeric: tabular-nums;
+            transition: background .15s, color .15s;
+        }
+        .ty-btn:hover { color: var(--text); }
+        .ty-btn.active { background: var(--accent); color: #fff; font-weight: 600; box-shadow: var(--shadow); }
+        #global-ty-selector { align-items: center; }
+        #global-ty-selector::before {
+            content: 'Tax year'; font-size: 12px; font-weight: 500; color: var(--text-3); padding: 0 8px 0 6px;
+        }
+        /* Per-section selectors stay in the DOM (and in sync) — the sticky global flipper is the visible control */
+        .section > .tax-year-selector { display: none; }
+
+        /* ============================== Cards (shared) */
+        .card, .kpi-card, .chart-card, .table-card, .form-card, .timeline-card, .hero {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+        }
+        .chart-card, .table-card, .form-card, .timeline-card { padding: 22px 24px; margin-bottom: var(--gap); }
+        .chart-card h3, .table-card h3, .form-card h3, .timeline-card h3 {
+            font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 4px; color: var(--text);
+        }
+        .card-sub { font-size: 13px; color: var(--text-3); margin-bottom: 16px; }
+        .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+        .card-head h3 { margin-bottom: 0; }
+        .card-head .meta { font-size: 12px; color: var(--text-3); }
+
+        /* ============================== Hero summary */
+        .hero { padding: 26px 28px; margin-bottom: var(--gap); }
+        .hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+        .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+        .hero-title { font-size: 26px; font-weight: 700; letter-spacing: -.025em; line-height: 1.2; margin-top: 4px; }
+        .hero-title .muted { color: var(--text-3); font-weight: 500; }
+        .hero-via { font-size: 13px; color: var(--text-2); margin-top: 6px; max-width: 640px; }
+        .pill {
+            display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+            padding: 7px 14px 7px 12px; border-radius: 999px;
+            font-size: 13px; font-weight: 600; letter-spacing: .01em; border: 1px solid transparent;
+        }
+        .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+        .pill-ok { background: var(--ok-soft); color: var(--ok-text); border-color: var(--ok-border); }
+        .pill-warn { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn-border); }
+        .pill-neutral { background: var(--surface-3); color: var(--text-2); border-color: var(--border); }
+        .pill-bad { background: var(--bad-soft); color: var(--bad-text); border-color: var(--bad-border); }
+
+        .hero-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; }
+        .hero-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px 20px; }
+        .metric-label { font-size: 12px; font-weight: 500; color: var(--text-3); }
+        .metric-big { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 12px; flex-wrap: wrap; }
+        .metric-big .value { font-size: 40px; font-weight: 700; letter-spacing: -.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+        .metric-big .of { font-size: 16px; color: var(--text-3); font-weight: 500; font-variant-numeric: tabular-nums; }
+        .metric-big .tag-right { margin-left: auto; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .progress { position: relative; height: 12px; background: var(--track); border-radius: 999px; overflow: hidden; }
+        .progress > span { position: absolute; inset: 0 auto 0 0; border-radius: 999px; transition: width .4s ease; }
+        .progress.sm { height: 8px; }
+        .fill-ok { background: var(--ok); } .fill-warn { background: var(--warn); } .fill-bad { background: var(--bad); }
+        .text-ok { color: var(--ok-text); } .text-warn { color: var(--warn-text); } .text-bad { color: var(--bad-text); }
+        .progress-scale { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); margin-top: 8px; font-variant-numeric: tabular-nums; gap: 12px; }
+        .hero-side { display: grid; gap: 12px; align-content: start; }
+        .hero-side .hero-panel { padding: 14px 18px; }
+        .mini-value { font-size: 24px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.2; }
+        .mini-value small { font-size: 13px; font-weight: 500; color: var(--text-3); }
+        .mini-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+        .hero-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
+        .hero-facts b { color: var(--text); font-weight: 600; }
+
+        /* ============================== Banners (coverage = info, unaccounted gaps = amber) */
+        .coverage-notice, .gap-banner {
+            position: relative; border-radius: var(--radius-sm); padding: 14px 18px 14px 50px;
+            margin-bottom: var(--gap); font-size: 13px; line-height: 1.6; color: var(--text-2);
+        }
+        .coverage-notice { background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+        .gap-banner { background: var(--warn-soft); border: 1px solid var(--warn-border); }
+        .coverage-notice::before, .gap-banner::before {
+            position: absolute; left: 16px; top: 14px;
+            width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+            color: #fff; font-weight: 700; font-size: 12.5px; font-family: Georgia, serif;
+        }
+        .coverage-notice::before { content: "i"; background: var(--accent); font-style: italic; }
+        .gap-banner::before { content: "!"; background: var(--warn); font-family: var(--font); }
+        .coverage-notice strong, .gap-banner strong { color: var(--text); }
+        .coverage-notice .flags { display: block; margin-top: 6px; color: var(--text-3); font-size: 12.5px; }
+        .gap-banner .gap-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .gap-chip { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--warn-border); color: var(--warn-text); font-variant-numeric: tabular-nums; }
+
+        /* ============================== KPI cards */
+        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: var(--gap); }
+        .kpi-card { padding: 18px 20px; }
+        .kpi-label { font-size: 12px; font-weight: 500; color: var(--text-3); margin-bottom: 6px; }
+        .kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -.025em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+        .kpi-value.sm { font-size: 17px; letter-spacing: -.01em; line-height: 1.35; }
+        .kpi-sub { font-size: 12px; color: var(--text-3); margin-top: 6px; line-height: 1.45; }
+        .kpi-ok { color: var(--ok-text); } .kpi-warn { color: var(--warn-text); } .kpi-high { color: var(--bad-text); }
+
+        .section { display: none; }
+        .section.active { display: block; animation: fade .18s ease; }
+        @keyframes fade { from { opacity: .4; } to { opacity: 1; } }
+
+        /* ============================== Charts */
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: var(--gap); margin-bottom: var(--gap); }
+        .chart-grid .chart-card { margin-bottom: 0; }
+        .chart-box { position: relative; height: 280px; }
+        .chart-box.tall { height: 300px; }
+
+        /* ============================== Country timeline bar */
+        .ctl-track { display: flex; height: 34px; border-radius: 9px; overflow: hidden; background: var(--track); gap: 2px; }
+        .ctl-seg { min-width: 2px; height: 100%; position: relative; cursor: default; transition: filter .15s, transform .15s; }
+        .ctl-seg:hover { filter: brightness(1.08) saturate(1.1); }
+        .ctl-seg.gap { background: repeating-linear-gradient(135deg, var(--warn) 0 4px, var(--warn-soft) 4px 8px); }
+        .ctl-seg.future { background: var(--surface-3); }
+        .ctl-axis { position: relative; height: 22px; margin-top: 6px; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+        .ctl-axis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+        .ctl-axis span::before { content: ""; position: absolute; left: 50%; top: -6px; width: 1px; height: 5px; background: var(--border-strong); }
+        .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; font-size: 12.5px; color: var(--text-2); }
+        .legend-item { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+        .legend-item b { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+        .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .swatch.gap { background: repeating-linear-gradient(135deg, var(--warn) 0 2px, var(--warn-soft) 2px 4px); border: 1px solid var(--warn-border); }
+        .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+
+        /* ============================== Tables */
+        .table-scroll { overflow: auto; max-height: 560px; margin: 0 -24px -22px; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
+        .table-scroll.flat { max-height: none; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+        thead th {
+            position: sticky; top: 0; z-index: 1;
+            text-align: left; padding: 10px 14px; background: var(--surface-2);
+            border-bottom: 1px solid var(--border); color: var(--text-3);
+            font-weight: 600; font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+        }
+        thead th:first-child, tbody td:first-child { padding-left: 24px; }
+        thead th:last-child, tbody td:last-child { padding-right: 24px; }
+        tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:nth-child(even) td { background: var(--surface-2); }
+        tbody tr:hover td { background: var(--accent-soft); }
+        td.nowrap, th.nowrap { white-space: nowrap; }
+        td.note { color: var(--text-2); font-size: 12.5px; min-width: 260px; max-width: 560px; }
+        .sub, td.sub { font-size: 12px; color: var(--text-3); }
+        tr.row-you td { background: var(--accent-soft) !important; font-weight: 600; }
+        tr.row-inferred td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+        .kv td:first-child { font-weight: 500; color: var(--text-2); width: 240px; }
+        .kv tbody tr:nth-child(even) td { background: none; }
+
+        /* ============================== Badges */
+        .status-badge, .timeline-tag {
+            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+            padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .01em;
+            border: 1px solid transparent; line-height: 1.6;
+        }
+        .status-ok, .status-disqualified, .tag-other { background: var(--ok-soft); color: var(--ok-text); border-color: var(--ok-border); }
+        .status-warn, .status-grey { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn-border); }
+        .status-high, .status-trigger { background: var(--bad-soft); color: var(--bad-text); border-color: var(--bad-border); }
+        .status-muted, .tag-neutral { background: var(--surface-3); color: var(--text-2); border-color: var(--border); }
+        .tag-uk { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; }
+        .tag-schengen { background: var(--surface-3); color: var(--text-2); border-color: var(--border); }
+        .tag-inferred { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn-border); font-size: 10.5px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
+
+        /* ============================== SRT vertical stepper */
+        .srt-flow { position: relative; margin: 6px 0 var(--gap); padding-left: 52px; }
+        .srt-flow::before { content: ""; position: absolute; left: 17px; top: 20px; bottom: 28px; width: 2px; background: var(--border); border-radius: 2px; }
+        .srt-step {
+            position: relative; background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 18px 22px; box-shadow: var(--shadow);
+        }
+        .srt-flow .srt-step-num {
+            position: absolute; left: -52px; top: 16px;
+            width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+            background: var(--surface); border: 2px solid var(--border-strong); color: var(--text-2);
+            font-size: 14px; font-weight: 700; box-shadow: 0 0 0 5px var(--bg);
+        }
+        .srt-step.deciding { border-color: var(--ok-border); box-shadow: 0 0 0 3px var(--ok-soft), var(--shadow); }
+        .srt-flow .srt-step.deciding .srt-step-num { background: var(--ok); border-color: var(--ok); color: #fff; }
+        .srt-step.deciding.risk { border-color: var(--bad-border); box-shadow: 0 0 0 3px var(--bad-soft), var(--shadow); }
+        .srt-flow .srt-step.deciding.risk .srt-step-num { background: var(--bad); border-color: var(--bad); }
+        .srt-step.muted { background: var(--surface-2); box-shadow: none; }
+        .srt-step.muted > *:not(.srt-step-header) { opacity: .72; }
+        .srt-step.muted .srt-step-title { color: var(--text-2); }
+        .srt-flow .srt-step.muted .srt-step-num { color: var(--text-3); border-style: dashed; }
+        .srt-step-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+        .srt-step-title { font-size: 15px; font-weight: 650; font-weight: 600; letter-spacing: -.01em; }
+        .srt-step-lede { font-size: 13px; color: var(--text-2); margin-bottom: 12px; }
+        .srt-subtests { display: grid; gap: 8px; }
+        .srt-subtest {
+            display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: start;
+            padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2);
+            border: 1px solid var(--border); font-size: 13px;
+        }
+        .srt-subtest .hint { display: block; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+        .srt-subtest .subdetail {
+            grid-column: 1 / -1; display: none; font-size: 12.5px; color: var(--text-2); line-height: 1.55;
+            margin-top: 4px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+        }
+        .srt-subtest .subdetail.always, .srt-subtest.open .subdetail { display: block; }
+        .srt-detail-toggle {
+            display: inline-flex; align-items: center; gap: 4px;
+            font: 500 12px/1.4 var(--font); color: var(--accent); cursor: pointer;
+            background: none; border: none; padding: 2px 0;
+        }
+        .srt-detail-toggle::after { content: "›"; font-size: 15px; line-height: 1; transition: transform .15s; display: inline-block; }
+        .srt-subtest.open .srt-detail-toggle::after { transform: rotate(90deg); }
+        .srt-detail-toggle:hover { color: var(--accent-hover); }
+        .srt-disclaimer { font-size: 12px; color: var(--text-3); margin-top: 12px; }
+        .srt-connector {
+            position: relative; font-size: 12px; color: var(--text-3); padding: 10px 0 10px 2px; font-weight: 500;
+        }
+        .srt-connector::before {
+            content: ""; position: absolute; left: -40px; top: 50%; width: 12px; height: 12px; margin-top: -6px;
+            border-right: 2px solid var(--border-strong); border-bottom: 2px solid var(--border-strong);
+            transform: rotate(45deg) translate(-2px, -2px); background: none;
+        }
+        .callout {
+            border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: var(--gap);
+            font-size: 13px; background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--text-2);
+        }
+        .callout .srt-step-title, .callout h4 { color: var(--text); font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .form-card.srt-step.muted { background: var(--surface-2); }
+
+        /* ============================== Info + alert cards */
+        .info-card {
+            background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+            border-radius: var(--radius-sm); padding: 16px 20px; margin-bottom: var(--gap);
+            font-size: 13px; line-height: 1.65; color: var(--text-2); box-shadow: var(--shadow-sm);
+        }
+        .info-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+        .info-card p { color: var(--text-2); }
+        .info-card strong { color: var(--text); }
+        .alert-card { border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: var(--gap); font-size: 13px; line-height: 1.6; color: var(--text-2); border: 1px solid; }
+        .alert-card strong { color: var(--text); }
+        .alert-warn { background: var(--warn-soft); border-color: var(--warn-border); box-shadow: inset 3px 0 0 var(--warn); }
+        .alert-high { background: var(--bad-soft); border-color: var(--bad-border); box-shadow: inset 3px 0 0 var(--bad); }
+        .alert-info { background: var(--accent-soft); border-color: transparent; box-shadow: inset 3px 0 0 var(--accent); }
+
+        /* ============================== Audit challenges (clickable) */
+        .audit-list { display: grid; gap: 8px; }
+        .audit-item { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); overflow: hidden; }
+        .audit-item summary {
+            list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text);
+        }
+        .audit-item summary::-webkit-details-marker { display: none; }
+        .audit-item summary::after { content: "›"; margin-left: auto; color: var(--text-3); font-size: 18px; line-height: 1; transition: transform .15s; }
+        .audit-item[open] summary::after { transform: rotate(90deg); }
+        .audit-item summary:hover { background: var(--surface-2); }
+        .audit-item .audit-body { padding: 0 16px 14px 16px; font-size: 13px; color: var(--text-2); line-height: 1.6; }
+        .audit-item.sev-high { box-shadow: inset 3px 0 0 var(--bad); }
+        .audit-item.sev-warn { box-shadow: inset 3px 0 0 var(--warn); }
+        .audit-item.sev-info { box-shadow: inset 3px 0 0 var(--accent); }
+        .sev-label { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
+        .sev-high .sev-label { background: var(--bad-soft); color: var(--bad-text); }
+        .sev-warn .sev-label { background: var(--warn-soft); color: var(--warn-text); }
+        .sev-info .sev-label { background: var(--accent-soft); color: var(--accent-text); }
+        .all-clear { color: var(--ok-text); font-weight: 600; }
+
+        /* ============================== Work log */
+        .work-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+        .work-dot-uk { background: var(--accent); } .work-dot-overseas { background: var(--ok); }
+
+        /* ============================== Documentation */
+        .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+        .doc-item { display: flex; gap: 14px; padding: 16px; align-items: flex-start; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+        .doc-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: var(--accent-soft); color: var(--accent); }
+        .doc-icon svg { width: 18px; height: 18px; }
+        .doc-details { flex: 1; min-width: 0; }
+        .doc-title { font-weight: 600; font-size: 13.5px; }
+        .doc-desc { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+        .doc-link { display: inline-block; margin-top: 6px; font-size: 12px; word-break: break-all; }
+
+        .note-bullets { margin: 0; padding-left: 16px; }
+        .note-bullets li { margin: 1px 0; }
+        .user-note { margin-top: 8px; padding: 7px 10px; border: 1px dashed var(--border-strong); border-radius: 8px; background: var(--surface-2); }
+        .user-note-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .user-note-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); }
+        .user-note-text { white-space: pre-wrap; color: var(--text); margin-top: 3px; }
+        .user-note-empty { color: var(--text-3); font-style: italic; }
+        .user-note-input { width: 100%; box-sizing: border-box; font: inherit; font-size: 12.5px; margin-top: 6px; padding: 6px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text); resize: vertical; }
+        .user-note-actions { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+        .user-note-hint { font-size: 11px; color: var(--text-3); }
+        .note-btn { font: inherit; font-size: 12px; line-height: 1.4; padding: 2px 10px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text-2); cursor: pointer; }
+        .note-btn:hover { color: var(--text); border-color: var(--text-3); }
+        .note-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .card-head .note-btn { margin-left: 10px; }
+        .doc-where { margin-top: 6px; font-size: 12px; color: var(--text-3); }
+        @media print { .note-btn, .user-note-actions { display: none !important; } }
+
+        .band-strip { position: relative; height: 14px; border-radius: 999px; overflow: hidden; background: var(--track); margin-top: 4px; }
+        .band-seg { position: absolute; top: 0; bottom: 0; background: var(--surface-3); }
+        .band-seg.alt { background: var(--border-strong); opacity: .55; }
+        .band-you { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: var(--accent); border-radius: 2px; }
+        .band-mine { position: absolute; top: 0; bottom: 0; width: 0; margin-left: -1px; border-left: 2px dashed var(--text-2); }
+        .band-ticks { position: relative; height: 16px; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+        .band-ticks span { position: absolute; top: 2px; transform: translateX(-50%); }
+        .band-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text-3); margin-top: 4px; }
+        .band-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+        .band-legend .k-you { background: var(--accent); }
+        .band-legend .k-mine { border: 2px dashed var(--text-2); width: 6px; height: 6px; }
+        .user-limit { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; }
+        .user-limit-label { font-weight: 600; color: var(--text-2); }
+        .user-limit-input { width: 90px; font: inherit; font-size: 13px; padding: 3px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text); }
+        .user-limit .user-note-hint { flex-basis: 100%; }
+        tr.row-band td { background: var(--accent-soft) !important; font-weight: 600; }
+        @media print { .user-limit .note-btn, .user-limit-input { display: none !important; } }
+        .doc-link.doc-path { color: var(--text-3); font-family: var(--mono); font-size: 11.5px; }
+
+        /* ============================== Footer */
+        .footer { text-align: center; padding: 20px 16px 4px; color: var(--text-3); font-size: 12px; }
+
+        /* ============================== Responsive */
+        @media (max-width: 960px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .hero-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 720px) {
+            body { font-size: 13.5px; }
+            .container { padding: 18px 14px 32px; }
+            .header h1 { font-size: 16.5px; }
+            .header .subtitle { font-size: 12px; }
+            .brand-mark { width: 34px; height: 34px; font-size: 13px; }
+            .tabs { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+            .navbar { margin: 0 -14px 16px; padding: 8px 14px; flex-direction: column; align-items: stretch; gap: 8px; }
+            .tax-year-selector { align-self: flex-start; }
+            .hero { padding: 20px 18px; }
+            .hero-title { font-size: 22px; }
+            .metric-big .value { font-size: 34px; }
+            .hero-side { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .hero-side .hero-panel { padding: 12px 14px; }
+            .mini-value { font-size: 20px; }
+            .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+            .kpi-card { padding: 14px 14px; }
+            .kpi-value { font-size: 22px; }
+            .kpi-value.sm { font-size: 14.5px; }
+            .chart-card, .table-card, .form-card, .timeline-card { padding: 18px 16px; }
+            .table-scroll { margin: 0 -16px -18px; max-height: 480px; }
+            thead th:first-child, tbody td:first-child { padding-left: 16px; }
+            thead th:last-child, tbody td:last-child { padding-right: 16px; }
+            td.note { min-width: 220px; }
+            .srt-flow { padding-left: 40px; }
+            .srt-flow::before { left: 13px; }
+            .srt-flow .srt-step-num { left: -40px; width: 28px; height: 28px; font-size: 12px; top: 16px; }
+            .srt-connector::before { left: -31px; }
+            .srt-step { padding: 16px; }
+            .srt-subtest { grid-template-columns: 1fr; }
+            .chart-box { height: 260px; }
+            .kv td:first-child { width: auto; }
+        }
+        @media (max-width: 420px) {
+            .hero-side { grid-template-columns: 1fr 1fr; }
+            .ty-btn { padding: 6px 9px; }
+        }
+
+        /* ============================== Print */
+        @media print {
+            @page { margin: 14mm; }
+            :root { --bg: #fff; --surface: #fff; --surface-2: #fff; --shadow: none; --shadow-sm: none; }
+            body { background: #fff; font-size: 11.5px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .container { max-width: none; padding: 0; }
+            .navbar, .tax-year-selector, .srt-detail-toggle { display: none !important; }
+            .section { display: block !important; animation: none; }
+            .section + .section { break-before: page; }
+            .hero, .kpi-card, .chart-card, .table-card, .form-card, .srt-step, .info-card, .callout, .audit-item, .coverage-notice, .gap-banner { break-inside: avoid; box-shadow: none !important; }
+            .table-scroll { max-height: none !important; overflow: visible !important; }
+            thead th { position: static; }
+            tbody tr:hover td { background: none; }
+            .srt-subtest .subdetail { display: block !important; }
+            .audit-item .audit-body { display: block; }
+            a { color: inherit; }
+            .doc-link::after { content: ""; }
+        }
+            .np-l6 { margin-top: 8px; font-style: italic; }
+        .np-l8 { font-weight: 600; }
+        .np-source { margin-top: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">@@NP_BRAND@@</div>
+            <div>
+                <h1>@@NP_TITLE@@</h1>
+                <div class="subtitle">@@NP_SUBTITLE@@</div>
+            </div>
+        </div>
+        <div class="current-location" id="current-location">Loading...</div>
+    </header>
+
+    <!-- Sticky navigation: sections + year flipper -->
+    <nav class="navbar" aria-label="Dashboard navigation">
+        <div class="tabs" role="tablist">
+            <button class="tab active" data-tab="overview" onclick="switchTab('overview', this)">Overview</button>
+            <button class="tab" data-tab="uk" onclick="switchTab('uk', this)">UK Days</button>
+            <button class="tab" data-tab="schengen" onclick="switchTab('schengen', this)">Schengen</button>
+            <button class="tab" data-tab="timeline" onclick="switchTab('timeline', this)">Full Timeline</button>
+            <button class="tab" data-tab="work" onclick="switchTab('work', this)">Work Days</button>
+            <button class="tab" data-tab="srt" onclick="switchTab('srt', this)">SRT Status</button>
+            <button class="tab" data-tab="docs" onclick="switchTab('docs', this)">Documentation</button>
+        </div>
+        <div class="tax-year-selector" id="global-ty-selector" aria-label="Tax year"></div>
+    </nav>
+
+    <!-- Shown only where JavaScript is off (chat/mail in-app previews, Finder Quick Look). -->
+    <noscript>
+        <div id="js-required-notice" role="alert" style="margin:16px 0;padding:14px 18px;border:1px solid #d97706;border-radius:12px;background:#fffbeb;color:#92400e;font-size:15px;line-height:1.5">
+            <strong>This dashboard needs JavaScript, and this viewer has it switched off.</strong>
+            In-app previews (chat apps, Mail, Finder Quick Look) don't run scripts, so the tabs, year selector and figures stay blank.
+            Save the file, then open it in Safari, Chrome or Brave (double-click it, or right-click &rarr; Open With). It works offline; nothing is downloaded.
+        </div>
+    </noscript>
+
+    <!-- Hero summary for the selected tax year (rendered by renderHero) -->
+    <section class="hero" id="hero" aria-live="polite"></section>
+
+    <!-- Unaccounted-day gaps for the selected tax year (derived from travel data) -->
+    <div id="gap-banner-slot"></div>
+
+    @@NP_COVERAGE@@
+
+    <!-- ==================== OVERVIEW ==================== -->
+    <div class="section active" id="section-overview">
+        <div class="kpi-row" id="kpi-overview"></div>
+        <div id="alerts-container"></div>
+        <div class="chart-card">
+            <div class="card-head">
+                <h3>Location Timeline</h3>
+                <span class="meta" id="ctl-overview-meta"></span>
+            </div>
+            <div id="ctl-overview"></div>
+        </div>
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3>Days by Country</h3>
+                <p class="card-sub">Selected tax year, midnight rule</p>
+                <div class="chart-box"><canvas id="chart-country-pie"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>Monthly Location Breakdown</h3>
+                <p class="card-sub">Days per country per month</p>
+                <div class="chart-box"><canvas id="chart-monthly-stacked"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== UK DAYS ==================== -->
+    <div class="section" id="section-uk">
+        <div class="tax-year-selector" id="uk-ty-selector"></div>
+        <div class="kpi-row" id="kpi-uk"></div>
+        <div class="info-card" id="uk-srt-summary"></div>
+        <div class="table-card">
+            <div class="card-head"><h3>UK Visits</h3><span class="meta" id="uk-visits-meta"></span><button type="button" class="note-btn" onclick="exportUserNotes()" title="Your notes and your own limit are saved in this browser on this device. Export them to keep a copy.">Export my notes</button></div>
+            <div class="table-scroll">
+                <table id="uk-visits-table">
+                    <thead>
+                        <tr>
+                            <th>Arrival</th>
+                            <th>Departure</th>
+                            <th class="num">Days</th>
+                            <th>Purpose</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="uk-visits-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCHENGEN ==================== -->
+    <div class="section" id="section-schengen">
+        <div class="kpi-row" id="kpi-schengen"></div>
+        <div class="chart-card">
+            <h3>Schengen 90/180 rule — rolling window</h3>
+            <p class="card-sub">Schengen 90/180 rule (immigration): up to 90 days in any rolling 180-day window. Switzerland IS Schengen. Cyprus is NOT.<br><span class="np-l8">@@NP_L8@@</span></p>
+            <div class="chart-box tall"><canvas id="chart-schengen-rolling"></canvas></div>
+        </div>
+        <div class="table-card">
+            <div class="card-head"><h3>Schengen Visits</h3></div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Country</th>
+                            <th>Arrival</th>
+                            <th>Departure</th>
+                            <th class="num">Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schengen-visits-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FULL TIMELINE ==================== -->
+    <div class="section" id="section-timeline">
+        <div class="tax-year-selector" id="timeline-ty-selector"></div>
+        <div class="chart-card">
+            <div class="card-head"><h3>Country Timeline</h3><span class="meta" id="ctl-timeline-meta"></span></div>
+            <div id="ctl-timeline"></div>
+        </div>
+        <div class="timeline-card">
+            <div class="card-head"><h3>Complete Travel Log</h3><span class="meta" id="timeline-meta"></span><button type="button" class="note-btn" onclick="exportUserNotes()" title="Your notes and your own limit are saved in this browser on this device. Export them to keep a copy.">Export my notes</button></div>
+            <div class="table-scroll flat">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dates</th>
+                            <th>Country</th>
+                            <th class="num">Days</th>
+                            <th>Zone</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timeline-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== WORK DAYS ==================== -->
+    <div class="section" id="section-work">
+        <div class="tax-year-selector" id="work-ty-selector"></div>
+        <div class="kpi-row" id="kpi-work"></div>
+        <div class="info-card">
+            <h4>Work Day Rules</h4>
+            <p>For the SRT third automatic overseas test: fewer than 31 days working 3+ hours in the UK per tax year.
+            All work days (UK and overseas) are tracked here for audit evidence.</p>
+        </div>
+        <div class="table-card">
+            <div class="card-head"><h3 id="work-log-title">Work Day Log</h3><button type="button" class="note-btn" onclick="exportUserNotes()" title="Your notes and your own limit are saved in this browser on this device. Export them to keep a copy.">Export my notes</button></div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Location</th>
+                            <th class="num">Hours</th>
+                            <th>UK?</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="work-log-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SRT STATUS ==================== -->
+    <div class="section" id="section-srt">
+        <div class="tax-year-selector" id="srt-ty-selector"></div>
+        <div id="srt-result"></div>
+        <div id="srt-config"></div>
+        <div id="srt-ties"></div>
+        <div id="srt-detail"></div>
+        <div id="srt-audit"></div>
+    </div>
+
+    <!-- ==================== DOCUMENTATION ==================== -->
+    <div class="section" id="section-docs">
+        <div class="info-card">
+            <h4>Evidence &amp; Documentation</h4>
+            <p>Pointers to where records of residence and travel can be found. Keep these current for any HMRC audit.</p>
+        </div>
+        <div class="form-card" id="docs-list"></div>
+    </div>
+
+
+    <footer class="footer">
+        Last updated: <span id="last-updated"></span> &middot;
+        Data from your Nomad Pro day log (daylog.json) and your profile answers. Ask your assistant to rebuild it whenever you want it updated.
+        <div class="np-l6">@@NP_L6@@</div>@@NP_SOURCE@@
+    </footer>
+</div>
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const SCHENGEN_COUNTRIES_FALLBACK = new Set([
+    'Austria', 'Belgium', 'Croatia', 'Czech Republic', 'Denmark', 'Estonia',
+    'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Iceland', 'Italy',
+    'Latvia', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands',
+    'Norway', 'Poland', 'Portugal', 'Slovakia', 'Slovenia', 'Spain', 'Sweden',
+    'Switzerland'
+]);
+
+const COUNTRY_COLORS = { 'United Kingdom': '#e57373', 'Other': '#e0e0e0' };
+
+// All data below is injected by tools/srt_dashboard.py from the user's own day log and profile.
+const NP = /*@@NP_DATA@@*/{};
+const TAX_YEARS = NP.taxYears || [];
+
+// One row per stay (midnight rule). Rows prefixed [INFERRED] include at least one day whose location is
+// reasoned rather than evidenced.
+const SEED_TRAVEL = NP.travel || [];
+
+const SEED_WORK_DAYS = NP.workDays || [];
+
+const SEED_DOCS = NP.docs || [];
+
+const SCHENGEN_COUNTRIES = (NP.schengenCountries && NP.schengenCountries.length) ? new Set(NP.schengenCountries) : SCHENGEN_COUNTRIES_FALLBACK;
+function npYearOpen(ty) { return !!((NP.yearOpen || {})[ty]); }
+// Unfinished tax year: figures only, no per-test marks or pathway (they appear once the year has ended).
+const NP_OPEN_NOTE = 'Year not finished; figures so far';
+function npPathText(srt, ty) {
+    if (npYearOpen(ty)) return NP_OPEN_NOTE;
+    return (srt.pathway === 'automatic_overseas' ? (srt.test1Pass ? 'Automatic overseas test figures (day count)' : 'Automatic overseas test figures (full-time work overseas)') : srt.pathway === 'automatic_resident' ? 'Automatic UK test figures' : 'Sufficient ties test figures');
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let travelData = [];
+let workData = [];
+let docsData = [];
+let selectedTaxYear = NP.selectedTaxYear || (TAX_YEARS.length ? TAX_YEARS[TAX_YEARS.length - 1].label : '');
+let charts = {};
+
+// Per-year configuration: employment status, auto overseas/resident, and ties
+const SEED_TAX_YEAR_CONFIG = NP.taxYearConfig || {};
+
+let taxYearConfig = {};
+
+function _todayISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function loadData() {
+    // Data is baked in from the day log when the dashboard is built. To update: ask your assistant to rebuild.
+    travelData = [...SEED_TRAVEL];
+    workData = [...SEED_WORK_DAYS];
+    docsData = [...SEED_DOCS];
+    taxYearConfig = JSON.parse(JSON.stringify(SEED_TAX_YEAR_CONFIG));
+}
+
+
+// ============================================================
+// UTILITY
+// ============================================================
+function fmtDate(isoStr) {
+    // Convert YYYY-MM-DD to DD/MM/YYYY
+    if (!isoStr || isoStr.length < 10) return isoStr || '';
+    const [y, m, d] = isoStr.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+function daysBetween(start, end) {
+    const s = new Date(start);
+    const e = new Date(end);
+    return Math.floor((e - s) / 86400000) + 1;
+}
+
+function dateInRange(date, start, end) {
+    return date >= start && date <= end;
+}
+
+function getTaxYear(dateStr) {
+    const d = new Date(dateStr);
+    for (const ty of TAX_YEARS) {
+        if (d >= new Date(ty.start) && d <= new Date(ty.end)) return ty.label;
+    }
+    return null;
+}
+
+function getTripsInTaxYear(tyLabel) {
+    const ty = TAX_YEARS.find(t => t.label === tyLabel);
+    if (!ty) return [];
+    return travelData.filter(t => {
+        const tStart = new Date(t.start);
+        const tEnd = new Date(t.end);
+        const tyStart = new Date(ty.start);
+        const tyEnd = new Date(ty.end);
+        return tStart <= tyEnd && tEnd >= tyStart;
+    });
+}
+
+function countDaysInCountry(trips, country, tyLabel) {
+    const ty = TAX_YEARS.find(t => t.label === tyLabel);
+    if (!ty) return 0;
+    const tyStart = new Date(ty.start);
+    const tyEnd = new Date(ty.end);
+    let days = 0;
+    for (const t of trips) {
+        if (t.country !== country) continue;
+        const s = new Date(Math.max(new Date(t.start), tyStart));
+        const e = new Date(Math.min(new Date(t.end), tyEnd));
+        if (s <= e) days += Math.floor((e - s) / 86400000) + 1;
+    }
+    return days;
+}
+
+function countDaysByRegion(trips, tyLabel) {
+    const ty = TAX_YEARS.find(t => t.label === tyLabel);
+    if (!ty) return {};
+    const tyStart = new Date(ty.start);
+    const tyEnd = new Date(ty.end);
+    const result = {};
+    for (const t of trips) {
+        const s = new Date(Math.max(new Date(t.start), tyStart));
+        const e = new Date(Math.min(new Date(t.end), tyEnd));
+        if (s > e) continue;
+        const d = Math.floor((e - s) / 86400000) + 1;
+        result[t.country] = (result[t.country] || 0) + d;
+    }
+    return result;
+}
+
+function getSchengenDaysInWindow(asOfDate) {
+    // Count Schengen days in 180-day window ending on asOfDate
+    const end = new Date(asOfDate);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 179);
+    let days = 0;
+    for (const t of travelData) {
+        if (!SCHENGEN_COUNTRIES.has(t.country)) continue;
+        const tStart = new Date(t.start);
+        const tEnd = new Date(t.end);
+        const overlapStart = new Date(Math.max(tStart, start));
+        const overlapEnd = new Date(Math.min(tEnd, end));
+        if (overlapStart <= overlapEnd) {
+            days += Math.floor((overlapEnd - overlapStart) / 86400000) + 1;
+        }
+    }
+    return days;
+}
+
+function getSchengenDaysRemaining() {
+    return 90 - getSchengenDaysInWindow(_todayISO());
+}
+
+// ============================================================
+// SRT ASSESSMENT ENGINE
+// ============================================================
+function assessSRT(tyLabel) {
+    const ukDays = countDaysInCountry(travelData, 'United Kingdom', tyLabel);
+    const ukWorkDays = workData.filter(w => w.uk === 'yes' && getTaxYear(w.date) === tyLabel).length;
+    const daysByCountry = countDaysByRegion(travelData, tyLabel);
+    const config = taxYearConfig[tyLabel] || {};
+    const ties = config.ties || {};
+    const aoCfg = config.autoOverseas || {};
+    const arCfg = config.autoResident || {};
+
+    // Leaver status comes from the user's recorded residence for the previous 3 tax years (built by the engine)
+    const lv = (NP.leaverYears || {})[tyLabel] || { leaverYear: 0, classification: 'Residence in earlier years not recorded', sub: 'Record the previous 3 tax years to see which HMRC table applies' };
+    const leaverYear = lv.leaverYear, classification = lv.classification, leaverSub = lv.sub || '';
+
+    // ============================================================
+    // HMRC RDR3 order (must show all stages; never skip Automatic Resident)
+    // 1) Automatic Overseas → 2) Automatic UK Resident → 3) Sufficient Ties
+    // ============================================================
+
+    // --- Stage 1: Automatic Overseas ---
+    const autoLimit = leaverYear >= 4 ? 46 : 16;
+    const dayCountPass = ukDays < autoLimit;
+
+    // FT overseas: config status claimed|not_claimed|grey, from the user's own answer. Only 'claimed' counts.
+    let ftWorkStatus = aoCfg.ftWorkStatus || (config.employedOverseasFulltime ? 'claimed' : 'not_claimed');
+    if (!['claimed', 'not_claimed', 'grey'].includes(ftWorkStatus)) {
+        ftWorkStatus = config.employedOverseasFulltime ? 'claimed' : 'not_claimed';
+    }
+    const ftNumericOk = ukDays < 91 && ukWorkDays < 31;
+    const ftWorkPass = ftWorkStatus === 'claimed' && ftNumericOk;
+    const isEmployedOverseas = config.employedOverseasFulltime === true || ftWorkStatus === 'claimed' || ftWorkStatus === 'grey';
+    const autoOverseasPass = dayCountPass || ftWorkPass;
+    const autoOverseasNotes = [];
+    if (aoCfg.ftWorkNotes) autoOverseasNotes.push(aoCfg.ftWorkNotes);
+    if (ftWorkStatus === 'grey') {
+        autoOverseasNotes.push('GREY: FT overseas may be arguable but contractor characterisation / contested employment means this path must not be treated as decided. Continue to Automatic Resident + Sufficient Ties.');
+    }
+
+    // --- Stage 2: Automatic UK Resident (any one → UK resident) ---
+    // Prefer Config explicit assessments; also compute 183 from ledger.
+    const days183Pass = (arCfg.days183 === true) || (ukDays >= 183);
+    const homeOnlyPass = arCfg.homeOnly === true;
+    const ftUkWorkPass = arCfg.ftUkWork === true;
+    const anyAutoResidentTrigger = days183Pass || homeOnlyPass || ftUkWorkPass;
+    const autoResidentDisqualified = !anyAutoResidentTrigger; // none met
+    const detailNotes = [];
+    if (arCfg.days183Notes) detailNotes.push({ test: '183+ UK days', triggers: days183Pass, text: arCfg.days183Notes });
+    else detailNotes.push({ test: '183+ UK days', triggers: days183Pass, text: `UK days = ${ukDays} (ledger). ${npYearOpen(tyLabel) ? '' : (ukDays >= 183 ? 'At or above the 183-day figure.' : 'Below the 183-day figure.')}` });
+    if (arCfg.homeOnlyNotes) detailNotes.push({ test: 'Only home(s) in the UK', triggers: homeOnlyPass, text: arCfg.homeOnlyNotes });
+    else detailNotes.push({ test: 'Only home(s) in the UK', triggers: homeOnlyPass, text: 'No answer recorded yet. Tell your assistant your position, then ask it to rebuild the dashboard.' });
+    if (arCfg.ftUkWorkNotes) detailNotes.push({ test: 'Full-time work in the UK', triggers: ftUkWorkPass, text: arCfg.ftUkWorkNotes });
+    else detailNotes.push({ test: 'Full-time work in the UK', triggers: ftUkWorkPass, text: 'No answer recorded yet. Tell your assistant your position, then ask it to rebuild the dashboard.' });
+
+    // --- Stage 3: Sufficient Ties (only if the Automatic Overseas figures are not met AND no Automatic Resident test is met) ---
+    const prevTYs = TAX_YEARS.filter(t => t.label < tyLabel).slice(-2);
+    const has90DayTie = prevTYs.some(pt => countDaysInCountry(travelData, 'United Kingdom', pt.label) > 90) || !!ties.ninetyDay;
+
+    const maxCountry = Object.entries(daysByCountry).sort((a,b) => b[1]-a[1])[0];
+    const hasCountryTie = leaverYear < 4 && !!maxCountry && maxCountry[0] === 'United Kingdom';  // country tie: leavers only
+
+    const resolvedTies = {
+        family: !!ties.family,
+        accommodation: !!ties.accommodation,
+        work: ukWorkDays >= 40 ? true : !!ties.work,
+        ninetyDay: has90DayTie,
+        country: hasCountryTie
+    };
+
+    const tieCount = Object.values(resolvedTies).filter(Boolean).length;
+
+    const tiesLimits = [
+        { ties: 0, maxDays: 182 },
+        { ties: 1, maxDays: 120 },
+        { ties: 2, maxDays: 90 },
+        { ties: 3, maxDays: 45 },
+        { ties: 4, maxDays: 15 },
+    ];
+    const tiesBand = tiesLimits.find(t => t.ties === tieCount) || tiesLimits[tiesLimits.length - 1];
+    // HMRC RDR3 leaver table, used only to pick the stage label; no figure from it is shown as a limit.
+    const tiesPass = ukDays <= tiesBand.maxDays;
+    const sufficientTiesReached = !autoOverseasPass && !anyAutoResidentTrigger;
+
+    // Pathway through the HMRC RDR3 order (labels only)
+    let overallPass = false;
+    let appliedTest = '';
+    let appliedDetail = '';
+    let pathway = '';
+
+    if (autoOverseasPass) {
+        overallPass = true;
+        pathway = 'automatic_overseas';
+        if (dayCountPass) {
+            appliedTest = 'Automatic Overseas (day-count)';
+            appliedDetail = `${ukDays} UK days, fewer than ${autoLimit} (HMRC day-count figure)`;
+        } else {
+            appliedTest = 'Automatic Overseas (FT work overseas)';
+            appliedDetail = `FT overseas claimed, ${ukDays} UK days (< 91), ${ukWorkDays} UK work days (< 31)`;
+        }
+    } else if (anyAutoResidentTrigger) {
+        overallPass = false;
+        pathway = 'automatic_resident';
+        appliedTest = 'Automatic UK Resident';
+        const which = [
+            days183Pass ? '183+ UK days' : null,
+            homeOnlyPass ? 'only home(s) in UK' : null,
+            ftUkWorkPass ? 'full-time UK work' : null,
+        ].filter(Boolean).join(', ');
+        appliedDetail = `Recorded: ${which} (automatic UK test figures for ${tyLabel}).`;
+    } else {
+        pathway = 'sufficient_ties';
+        if (tiesPass) {
+            overallPass = true;
+            appliedTest = 'Sufficient Ties Test';
+            appliedDetail = `${tieCount} tie${tieCount !== 1 ? 's' : ''} recorded, ${ukDays} UK days — reached because the Automatic Overseas figures were not met and no Automatic Resident test was met`;
+        } else {
+            overallPass = false;
+            appliedTest = 'Sufficient Ties Test';
+            appliedDetail = `${ukDays} UK days with ${tieCount} tie${tieCount !== 1 ? 's' : ''} recorded.`;
+        }
+    }
+
+    // Legacy aliases used by Overview / UK Days / Audit (map to RDR3 stages)
+    const test1Pass = dayCountPass;
+    const test2Pass = ftWorkPass; // grey does not count as claimed
+    const test3Pass = sufficientTiesReached ? tiesPass : (pathway === 'sufficient_ties' && tiesPass);
+
+    return {
+        ukDays,
+        ukWorkDays,
+        daysByCountry,
+        leaverYear,
+        classification,
+        leaverSub,
+        autoLimit,
+        // Legacy
+        test1Pass,
+        test2Pass,
+        test3Pass,
+        isEmployedOverseas,
+        // New structured RDR3
+        autoOverseas: {
+            dayCountPass,
+            ftWorkPass,
+            ftWorkStatus,
+            ftNumericOk,
+            notes: autoOverseasNotes,
+            met: autoOverseasPass
+        },
+        autoResident: {
+            days183Pass,
+            homeOnlyPass,
+            ftUkWorkPass,
+            anyTrigger: anyAutoResidentTrigger,
+            disqualified: autoResidentDisqualified,
+            detailNotes
+        },
+        pathway,
+        sufficientTiesReached,
+        resolvedTies,
+        tieCount,
+        tiesLimits,
+        overallPass,
+        appliedTest,
+        appliedDetail,
+        maxCountry,
+        has90DayTie,
+        hasCountryTie,
+        config
+    };
+}
+
+// ============================================================
+// AUDIT / CHALLENGE SYSTEM
+// ============================================================
+function runAuditChallenges(tyLabel) {
+    const srt = assessSRT(tyLabel);
+    const config = taxYearConfig[tyLabel] || {};
+    const challenges = [];
+
+    // === CHALLENGE 1: Country tie override vs actual data ===
+    if (!config.ties?.country && srt.hasCountryTie) {
+        challenges.push({
+            severity: 'high',
+            title: 'Country tie override contradicts data',
+            detail: `You set country tie = No, but your travel data shows the UK IS your top country in ${tyLabel} with ${srt.maxCountry[1]} days. ${srt.maxCountry[0]} has the most days. If the UK becomes the top country, this tie flips to Yes and your tie count goes up.`
+        });
+    }
+
+    // === CHALLENGE 2: Country tie proximity warning ===
+    if (srt.maxCountry && srt.maxCountry[0] !== 'United Kingdom') {
+        const ukDaysInYear = srt.ukDays;
+        const topDays = srt.maxCountry[1];
+        const gap = topDays - ukDaysInYear;
+        if (gap < 15 && gap > 0) {
+            challenges.push({
+                severity: 'warn',
+                title: 'Country tie nearly triggered',
+                detail: `UK has ${ukDaysInYear} days, your top country (${srt.maxCountry[0]}) has ${topDays} days. Only ${gap} days separate them. If the UK overtakes, a country tie is added to your tie count.`
+            });
+        }
+    }
+
+    // === CHALLENGE 3: 90-day tie proximity ===
+    const currentYearUKDays = srt.ukDays;
+    if (currentYearUKDays >= 80 && currentYearUKDays <= 90) {
+        challenges.push({
+            severity: 'warn',
+            title: '90-day tie risk for future years',
+            detail: `You have ${currentYearUKDays} UK days in ${tyLabel}. If you go over 90, this creates a 90-day tie for the next two tax years, which would increase your tie count in those years (see the HMRC day bands on the SRT tab).`
+        });
+    }
+
+    // === CHALLENGE 4: Accommodation tie set to No but evidence suggests otherwise ===
+    if (!config.ties?.accommodation) {
+        const ukTrips = travelData.filter(t => t.country === 'United Kingdom');
+        const hasLongUKStay = ukTrips.some(t => daysBetween(t.start, t.end) > 14);
+        if (hasLongUKStay) {
+            challenges.push({
+                severity: 'warn',
+                title: 'Accommodation tie may be incorrect',
+                detail: `You set accommodation tie = No, but you have UK visits exceeding 14 days. If you have any UK property available for 91+ continuous days (including a family home you can stay at), this tie should be Yes. This changes your tie count.`
+            });
+        }
+    }
+
+    // === CHALLENGE 5: Full-time overseas work test - significant break ===
+    if (config.employedOverseasFulltime && config.employmentEnd) {
+        const tyObj = TAX_YEARS.find(t => t.label === tyLabel);
+        const empEnd = new Date(config.employmentEnd);
+        const tyEnd = new Date(tyObj.end);
+        if (empEnd < tyEnd) {
+            const gapDays = Math.floor((tyEnd - empEnd) / 86400000);
+            if (gapDays > 31) {
+                challenges.push({
+                    severity: 'high',
+                    title: 'Full-time overseas work test may be invalid',
+                    detail: `Employment ended ${fmtDate(config.employmentEnd)} but tax year runs to ${fmtDate(tyObj.end)}. That is ${gapDays} days without work, which exceeds the 31-day "significant break" threshold. HMRC may not accept the full-time overseas work test for ${tyLabel}. You may need to rely on the sufficient ties test instead. Verify with a tax adviser.`
+                });
+            }
+        }
+    }
+
+    // === CHALLENGE 6: Independent contractor vs employee distinction ===
+    if (config.contractType && config.contractType.toLowerCase().includes('contractor')) {
+        challenges.push({
+            severity: 'info',
+            title: 'Independent contractor status for SRT',
+            detail: `Your work is recorded as a contract (${escHtml(config.contractType)}). For the full-time overseas work test, HMRC assesses whether you are "employed" or "self-employed". As an independent contractor, you may be treated as self-employed. The overseas work test applies differently. Check with a tax adviser how your arrangement fits the test.`
+        });
+    }
+
+    // === CHALLENGE 7: Work tie proximity ===
+    const ukWorkDays = workData.filter(w => w.uk === 'yes' && getTaxYear(w.date) === tyLabel).length;
+    if (ukWorkDays >= 30 && ukWorkDays < 40) {
+        challenges.push({
+            severity: 'warn',
+            title: 'Approaching work tie threshold',
+            detail: `You have ${ukWorkDays} UK work days in ${tyLabel}. The work tie triggers at 40 days. If you reach 40, a work tie is recorded and your tie count goes up.`
+        });
+    }
+
+    // === CHALLENGE 8: UK work days approaching SRT third test limit ===
+    if (ukWorkDays >= 25 && ukWorkDays < 31) {
+        challenges.push({
+            severity: 'warn',
+            title: 'UK work days near the HMRC overseas work test figure',
+            detail: `${ukWorkDays} UK work days recorded in ${tyLabel}. For reference, HMRC's full-time work overseas test (RDR3) uses fewer than 31 UK work days.`
+        });
+    }
+
+
+    // === CHALLENGE 10: Family tie - partner status ===
+    if (!config.ties?.family) {
+        challenges.push({
+            severity: 'info',
+            title: 'Family tie status check',
+            detail: 'Family tie is set to No. This is correct if: you have no UK-resident spouse, civil partner or partner you live with as a couple, and you have no minor children living in the UK. If you marry or enter a civil partnership, reassess immediately.'
+        });
+    }
+
+    // === CHALLENGE 11: Unaccounted days check ===
+    const tyObj = TAX_YEARS.find(t => t.label === tyLabel);
+    const tyStart = new Date(tyObj.start);
+    const tyEnd = new Date(Math.min(new Date(tyObj.end), new Date()));
+    const totalDaysInYear = Math.floor((tyEnd - tyStart) / 86400000) + 1;
+    const regionDays = srt.daysByCountry;
+    const accountedDays = Object.values(regionDays).reduce((a, b) => a + b, 0);
+    const unaccounted = totalDaysInYear - accountedDays;
+    if (unaccounted > 7) {
+        challenges.push({
+            severity: 'warn',
+            title: `${unaccounted} unaccounted days in ${tyLabel}`,
+            detail: `The tax year has ${totalDaysInYear} days so far, but travel data only accounts for ${accountedDays} days. ${unaccounted} days have no location recorded. These gaps could be problematic in an HMRC audit. Add entries for missing periods.`
+        });
+    }
+
+    return challenges;
+}
+
+// ============================================================
+// PRESENTATION HELPERS (visual only — no effect on SRT data/logic)
+// ============================================================
+// Categorical country colours — deliberately no amber/red/orange (those are reserved for status)
+const UI_PALETTE = ['#14b8a6', '#a78bfa', '#38bdf8', '#f472b6', '#a3e635', '#64748b', '#67e8f9', '#d946ef',
+                    '#bfae7a', '#6ee7b7', '#93c5fd', '#a8a29e', '#f0abfc', '#86a38a', '#c4b5fd', '#cbd5e1'];
+const UI_UK_COLOR = '#4f46e5';
+let _uiCountryColors = null;
+
+function countryColor(country) {
+    if (country === 'United Kingdom') return UI_UK_COLOR;
+    if (!_uiCountryColors) {
+        // Stable assignment: rank countries by total days across all data
+        const totals = {};
+        travelData.forEach(t => {
+            if (t.country === 'United Kingdom') return;
+            totals[t.country] = (totals[t.country] || 0) + daysBetween(t.start, t.end);
+        });
+        _uiCountryColors = {};
+        Object.keys(totals).sort((a, b) => totals[b] - totals[a] || a.localeCompare(b))
+            .forEach((c, i) => { _uiCountryColors[c] = UI_PALETTE[i % UI_PALETTE.length]; });
+    }
+    return _uiCountryColors[country] || '#94a3b8';
+}
+
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function applyChartTheme() {
+    if (typeof Chart === 'undefined') return;
+    Chart.defaults.font.family = cssVar('--font') || 'system-ui, sans-serif';
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = cssVar('--text-3');
+    Chart.defaults.borderColor = cssVar('--border');
+    Chart.defaults.plugins.tooltip.backgroundColor = '#101828';
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
+    Chart.defaults.plugins.legend.labels.boxWidth = 8;
+    Chart.defaults.plugins.legend.labels.boxHeight = 8;
+}
+
+const UI_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtLong(iso) {
+    if (!iso || iso.length < 10) return iso || '';
+    const [y, m, d] = iso.split('-');
+    return `${parseInt(d, 10)} ${UI_MONTHS[parseInt(m, 10) - 1]} ${y}`;
+}
+function fmtRange(a, b) {
+    if (a === b) return fmtLong(a);
+    const [ya, ma] = a.split('-'); const [yb, mb] = b.split('-');
+    if (ya === yb && ma === mb) return `${parseInt(a.slice(8), 10)}–${fmtLong(b)}`;
+    if (ya === yb) return `${parseInt(a.slice(8), 10)} ${UI_MONTHS[parseInt(ma, 10) - 1]} – ${fmtLong(b)}`;
+    return `${fmtLong(a)} – ${fmtLong(b)}`;
+}
+function isoAddDays(iso, n) {
+    const d = new Date(iso + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+}
+function statusTone(pct, ok) {
+    if (!ok) return 'bad';
+    return pct >= 0.85 ? 'warn' : 'ok';
+}
+function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Segments of the selected tax year (to today): trips + unaccounted gaps. Display only.
+function buildYearSegments(tyLabel) {
+    const ty = TAX_YEARS.find(t => t.label === tyLabel);
+    const today = _todayISO();
+    const rangeEnd = ty.end < today ? ty.end : today;
+    const trips = travelData
+        .filter(t => t.start <= rangeEnd && t.end >= ty.start)
+        .map(t => ({ ...t, s: t.start < ty.start ? ty.start : t.start, e: t.end > rangeEnd ? rangeEnd : t.end }))
+        .sort((a, b) => a.s.localeCompare(b.s));
+    const segs = [];
+    let cursor = ty.start;
+    for (const t of trips) {
+        if (t.s > cursor) {
+            const gEnd = isoAddDays(t.s, -1);
+            segs.push({ type: 'gap', s: cursor, e: gEnd, days: daysBetween(cursor, gEnd) });
+        }
+        if (t.e >= cursor) {
+            const s = t.s < cursor ? cursor : t.s;
+            segs.push({ type: 'trip', country: t.country, s, e: t.e, days: daysBetween(s, t.e) });
+            cursor = isoAddDays(t.e, 1);
+        }
+    }
+    if (cursor <= rangeEnd) segs.push({ type: 'gap', s: cursor, e: rangeEnd, days: daysBetween(cursor, rangeEnd) });
+    return { ty, rangeEnd, segs };
+}
+
+function renderCountryTimelineBar(containerId, metaId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const { ty, rangeEnd, segs } = buildYearSegments(selectedTaxYear);
+    const total = daysBetween(ty.start, rangeEnd);
+    const meta = document.getElementById(metaId);
+    if (meta) meta.textContent = `${fmtLong(ty.start)} – ${fmtLong(rangeEnd)} · ${total} days`;
+
+    const bar = segs.map(sg => {
+        const label = sg.type === 'gap' ? 'Unaccounted' : sg.country;
+        const tip = `${label}: ${fmtDate(sg.s)} – ${fmtDate(sg.e)} (${sg.days}d)`;
+        const style = sg.type === 'gap' ? '' : `background:${countryColor(sg.country)}`;
+        return `<div class="ctl-seg ${sg.type === 'gap' ? 'gap' : ''}" style="flex:${sg.days} 1 0;${style}" title="${escHtml(tip)}"></div>`;
+    }).join('');
+
+    // Month ticks (quarterly on narrow screens handled by CSS overflow; use every 2nd month if many)
+    const ticks = [];
+    const startIdx = Date.parse(ty.start + 'T00:00:00Z');
+    let [y, m] = ty.start.split('-').map(Number);
+    m += 1; if (m > 12) { m = 1; y += 1; }
+    const step = window.innerWidth < 720 ? 3 : 1;
+    let i = 0;
+    while (true) {
+        const iso = `${y}-${String(m).padStart(2, '0')}-01`;
+        if (iso > rangeEnd) break;
+        if (i % step === 0) {
+            const pos = ((Date.parse(iso + 'T00:00:00Z') - startIdx) / 86400000) / total * 100;
+            if (pos > 2 && pos < 98) ticks.push(`<span style="left:${pos}%">${UI_MONTHS[m - 1]}${m === 1 ? ' ' + String(y).slice(2) : ''}</span>`);
+        }
+        i++; m += 1; if (m > 12) { m = 1; y += 1; }
+    }
+
+    const byCountry = {};
+    let gapDays = 0;
+    segs.forEach(sg => {
+        if (sg.type === 'gap') gapDays += sg.days;
+        else byCountry[sg.country] = (byCountry[sg.country] || 0) + sg.days;
+    });
+    const legend = Object.entries(byCountry).sort((a, b) => b[1] - a[1]).map(([c, d]) =>
+        `<span class="legend-item"><span class="swatch" style="background:${countryColor(c)}"></span>${escHtml(c)} <b>${d}</b></span>`
+    ).join('') + (gapDays ? `<span class="legend-item"><span class="swatch gap"></span>Unaccounted <b>${gapDays}</b></span>` : '');
+
+    el.innerHTML = `<div class="ctl-track" role="img" aria-label="Country timeline for ${selectedTaxYear}">${bar}</div>
+        <div class="ctl-axis">${ticks.join('')}</div>
+        <div class="legend">${legend}</div>`;
+}
+
+function renderGapBanner() {
+    const slot = document.getElementById('gap-banner-slot');
+    if (!slot) return;
+    const { segs } = buildYearSegments(selectedTaxYear);
+    const gaps = segs.filter(s => s.type === 'gap');
+    if (!gaps.length) { slot.innerHTML = ''; return; }
+    const total = gaps.reduce((a, g) => a + g.days, 0);
+    slot.innerHTML = `<div class="gap-banner">
+        <strong>${total} unaccounted day${total !== 1 ? 's' : ''} in ${selectedTaxYear}.</strong>
+        No trip covers these dates, so they are counted nowhere (deliberately left empty rather than guessed).
+        <div class="gap-list">${gaps.map(g => `<span class="gap-chip">${fmtRange(g.s, g.e)} · ${g.days}d</span>`).join('')}</div>
+    </div>`;
+}
+
+// ============================================================
+// HERO — selected tax year summary
+// ============================================================
+const SEED_USER_LIMIT = NP.userLimit || null;
+
+// ============================================================
+// HMRC DAY BANDS (RDR3) — reference only. No personal limit, headroom or days-remaining figure is derived.
+// "Your own limit" is the user's own setting: blank by default, saved in this browser, exported with notes.
+// ============================================================
+function hmrcDayBands(leaverYear) {
+    if (leaverYear < 4) return { who: 'leaver', cuts: [16, 46, 91, 121, 183], rows: [
+        { band: 'Fewer than 16', lo: 0, hi: 15, ref: 'Automatic overseas test day-count figure' },
+        { band: '16–45', lo: 16, hi: 45, ref: '4 or more ties' },
+        { band: '46–90', lo: 46, hi: 90, ref: '3 or more ties' },
+        { band: '91–120', lo: 91, hi: 120, ref: '2 or more ties' },
+        { band: '121–182', lo: 121, hi: 182, ref: '1 or more ties' },
+        { band: '183 or more', lo: 183, hi: 366, ref: 'Automatic UK test figure (183 days)' } ] };
+    return { who: 'arriver', cuts: [46, 91, 121, 183], rows: [
+        { band: 'Fewer than 46', lo: 0, hi: 45, ref: 'Automatic overseas test day-count figure' },
+        { band: '46–90', lo: 46, hi: 90, ref: '4 ties' },
+        { band: '91–120', lo: 91, hi: 120, ref: '3 or more ties' },
+        { band: '121–182', lo: 121, hi: 182, ref: '2 or more ties' },
+        { band: '183 or more', lo: 183, hi: 366, ref: 'Automatic UK test figure (183 days)' } ] };
+}
+function hmrcBandLabel(days, leaverYear) {
+    const r = hmrcDayBands(leaverYear).rows.find(x => days >= x.lo && days <= x.hi);
+    return r ? r.band : '—';
+}
+function hmrcBandsCaption(leaverYear) {
+    const b = hmrcDayBands(leaverYear);
+    return `HMRC day bands (RDR3, ${b.who}): ${b.cuts.join(' · ')} — reference only`;
+}
+function bandStripHtml(days, leaverYear) {
+    const b = hmrcDayBands(leaverYear);
+    const ul = getUserLimit();
+    const top = Math.max(200, days + 10, ul ? ul.value + 10 : 0);
+    const pos = v => Math.min(100, Math.max(0, v / top * 100));
+    const edges = [0, ...b.cuts, top];
+    const segs = edges.slice(0, -1).map((s, i) =>
+        `<span class="band-seg${i % 2 ? ' alt' : ''}" style="left:${pos(s).toFixed(2)}%;width:${(pos(edges[i + 1]) - pos(s)).toFixed(2)}%"></span>`).join('');
+    const ticks = b.cuts.map(c => `<span style="left:${pos(c).toFixed(2)}%">${c}</span>`).join('');
+    const mine = ul ? `<span class="band-mine" style="left:${pos(ul.value).toFixed(2)}%" title="Your chosen limit: ${ul.value}"></span>` : '';
+    return `<div class="band-strip" role="img" aria-label="${days} UK days recorded, shown against HMRC day bands ${b.cuts.join(', ')}">`
+        + `${segs}${mine}<span class="band-you" style="left:${pos(days).toFixed(2)}%" title="UK days recorded: ${days}"></span></div>`
+        + `<div class="band-ticks">${ticks}</div>`
+        + `<div class="band-legend"><span><i class="k-you"></i>UK days recorded (${days})</span>`
+        + `${ul ? `<span><i class="k-mine"></i>Your chosen limit (${ul.value})</span>` : ''}`
+        + `<span>${hmrcBandsCaption(leaverYear)}</span></div>`;
+}
+
+const USER_LIMIT_KEY = 'nomad-pro-dashboard-user-limit-v1';
+function _userLimitStored() {
+    try { const raw = localStorage.getItem(USER_LIMIT_KEY); return raw === null ? undefined : JSON.parse(raw); } catch (e) { return undefined; }
+}
+function getUserLimit() {
+    const s = _userLimitStored();
+    const src = s !== undefined ? s : SEED_USER_LIMIT;
+    if (src && Number.isInteger(src.value) && src.value > 0) return src;
+    return null;
+}
+function userLimitInline() { const ul = getUserLimit(); return ul ? ` · Your chosen limit: ${ul.value}` : ''; }
+function userLimitHtml() {
+    const ul = getUserLimit();
+    return `<div class="user-limit" id="user-limit-box">`
+        + (ul ? `<span class="user-limit-label">Your chosen limit: ${ul.value}</span><span class="muted">UK days per tax year, set by you</span>`
+                + `<button type="button" class="note-btn" onclick="editUserLimit()">Edit</button>`
+                + `<button type="button" class="note-btn" onclick="clearUserLimit()">Clear</button>`
+              : `<span class="user-limit-label">Your own limit</span><span class="muted">Not set</span>`
+                + `<button type="button" class="note-btn" onclick="editUserLimit()">Set</button>`)
+        + `</div>`;
+}
+function editUserLimit() {
+    const box = document.getElementById('user-limit-box'); if (!box) return;
+    const ul = getUserLimit();
+    box.innerHTML = `<span class="user-limit-label">Your own limit</span>`
+        + `<input type="number" class="user-limit-input" min="1" max="366" step="1" inputmode="numeric" aria-label="Your own limit (UK days per tax year)" value="${ul ? ul.value : ''}">`
+        + `<span class="muted">UK days per tax year</span>`
+        + `<button type="button" class="note-btn primary" onclick="saveUserLimit()">Save</button>`
+        + `<button type="button" class="note-btn" onclick="renderHero()">Cancel</button>`
+        + `<span class="user-note-hint">Saved in this browser on this device until you export your notes.</span>`;
+    box.querySelector('input').focus();
+}
+function _storeUserLimit(value) {
+    try { localStorage.setItem(USER_LIMIT_KEY, JSON.stringify({ value, updated_at: new Date().toISOString() })); return true; }
+    catch (e) { return false; }
+}
+function _afterUserLimitChange() { renderHero(); renderActiveSection(); }
+function saveUserLimit() {
+    const box = document.getElementById('user-limit-box');
+    const raw = (box.querySelector('input').value || '').trim();
+    const v = raw === '' ? null : Number(raw);
+    if (v !== null && !(Number.isInteger(v) && v >= 1 && v <= 366)) {
+        const hint = box.querySelector('.user-note-hint'); if (hint) hint.textContent = 'Enter a whole number of days from 1 to 366, or leave it blank.';
+        return;
+    }
+    if (!_storeUserLimit(v)) { const hint = box.querySelector('.user-note-hint'); if (hint) hint.textContent = 'This browser blocked saving.'; return; }
+    _afterUserLimitChange();
+}
+function clearUserLimit() { _storeUserLimit(null); _afterUserLimitChange(); }
+function _userLimitExport() {
+    const s = _userLimitStored();
+    if (s !== undefined) return { value: (s && Number.isInteger(s.value)) ? s.value : null, updated_at: s ? (s.updated_at || null) : null };
+    return SEED_USER_LIMIT ? { value: SEED_USER_LIMIT.value, updated_at: SEED_USER_LIMIT.updated_at || null } : null;
+}
+
+function renderHero() {
+    const el = document.getElementById('hero');
+    if (!el) return;
+    const ty = selectedTaxYear;
+    const tyObj = TAX_YEARS.find(t => t.label === ty);
+    const srt = assessSRT(ty);
+
+    const used = srt.ukDays;
+    const wd = srt.ukWorkDays;
+
+    let pillCls, pillTxt;
+    pillCls = 'pill-neutral'; pillTxt = `${used} UK days recorded · ${npPathText(srt, ty)}`;
+
+    const countries = Object.keys(srt.daysByCountry).length;
+    const top = srt.maxCountry ? `${srt.maxCountry[0]} (${srt.maxCountry[1]}d)` : '—';
+
+    el.innerHTML = `
+        <div class="hero-top">
+            <div>
+                <div class="eyebrow">Tax year ${ty} · ${fmtLong(tyObj.start)} – ${fmtLong(tyObj.end)}</div>
+                <div class="hero-title">UK residence record <span class="muted">for ${ty}</span></div>
+                <div class="hero-via">${npYearOpen(ty) ? `${NP_OPEN_NOTE}: ${srt.ukDays} UK days, ${srt.ukWorkDays} UK work days, ${srt.tieCount} tie${srt.tieCount !== 1 ? 's' : ''} recorded.` : `via <strong>${srt.appliedTest}</strong> — ${srt.appliedDetail}`}</div>
+            </div>
+            <span class="pill ${pillCls}">${pillTxt}</span>
+        </div>
+        <div class="hero-grid">
+            <div class="hero-panel">
+                <div class="metric-label">UK days recorded</div>
+                <div class="metric-big">
+                    <span class="value">${used}</span><span class="of">UK days in ${ty}</span>
+                </div>
+                ${bandStripHtml(used, srt.leaverYear)}
+                ${userLimitHtml()}
+            </div>
+            <div class="hero-side">
+                <div class="hero-panel">
+                    <div class="metric-label">UK work days</div>
+                    <div class="mini-value">${wd} <small>recorded</small></div>
+                    <div class="mini-sub">HMRC reference (RDR3): the full-time work overseas test uses fewer than 31</div>
+                </div>
+                <div class="hero-panel">
+                    <div class="metric-label">UK ties</div>
+                    <div class="mini-value">${srt.tieCount} <small>tie${srt.tieCount !== 1 ? 's' : ''} recorded${srt.sufficientTiesReached || npYearOpen(ty) ? '' : ' (ties stage not reached)'}</small></div>
+                    <div class="mini-sub">${srt.classification}</div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-facts">
+            <span>Countries: <b>${countries}</b></span>
+            <span>Top country: <b>${top}</b></span>
+            ${npYearOpen(ty) ? `<span>${NP_OPEN_NOTE}</span>` : `<span>Pathway: <b>${{ automatic_overseas: 'Automatic Overseas', automatic_resident: 'Automatic UK Resident', sufficient_ties: 'Sufficient Ties' }[srt.pathway] || srt.pathway}</b></span>`}
+            <span>Not tax advice</span>
+        </div>`;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function getActiveSectionId() {
+    const active = document.querySelector('.section.active');
+    if (!active || !active.id) return 'overview';
+    return active.id.replace(/^section-/, '') || 'overview';
+}
+
+function renderActiveSection(sectionId) {
+    const id = sectionId || getActiveSectionId();
+    if (id === 'overview') renderOverview();
+    else if (id === 'uk') renderUK();
+    else if (id === 'schengen') renderSchengen();
+    else if (id === 'timeline') renderTimeline();
+    else if (id === 'work') renderWork();
+    else if (id === 'srt') renderSRT();
+    else if (id === 'docs') renderDocs();
+    else renderOverview();
+}
+
+function updateHeaderLocation() {
+    const today = _todayISO();
+    const currentTrip = travelData.find(t => t.start <= today && t.end >= today);
+    const el = document.getElementById('current-location');
+    if (el) {
+        el.textContent = currentTrip
+            ? `Currently in: ${currentTrip.country}`
+            : 'Location: update needed';
+    }
+}
+
+function switchTab(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+    if (el) {
+        el.classList.add('active');
+    } else {
+        const tabBtn = document.querySelector(`.tab[data-tab="${id}"]`);
+        if (tabBtn) tabBtn.classList.add('active');
+    }
+    renderActiveSection(id);
+}
+
+const TY_SELECTOR_IDS = [
+    'global-ty-selector',
+    'uk-ty-selector',
+    'timeline-ty-selector',
+    'work-ty-selector',
+    'srt-ty-selector'
+];
+
+function onTaxYearChange(tyLabel) {
+    selectedTaxYear = tyLabel;
+    // Refresh active state on every selector that currently has buttons
+    document.querySelectorAll('.ty-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent === tyLabel);
+    });
+    // Always refresh header location + hero + gap banner when year flips
+    updateHeaderLocation();
+    renderHero();
+    renderGapBanner();
+    const activeId = getActiveSectionId();
+    if (activeId === 'overview') {
+        syncAllTaxYearSelectors();
+        renderOverview();
+    } else {
+        renderActiveSection(activeId);
+        syncAllTaxYearSelectors();
+    }
+}
+
+function syncAllTaxYearSelectors() {
+    TY_SELECTOR_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!el.querySelector('.ty-btn')) {
+            renderTaxYearSelector(id);
+            return;
+        }
+        el.querySelectorAll('.ty-btn').forEach(b => {
+            b.classList.toggle('active', b.textContent === selectedTaxYear);
+        });
+    });
+}
+
+function renderTaxYearSelector(containerId, callback) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = '';
+    TAX_YEARS.forEach(ty => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ty-btn' + (ty.label === selectedTaxYear ? ' active' : '');
+        btn.textContent = ty.label;
+        btn.setAttribute('data-tax-year', ty.label);
+        btn.onclick = () => { onTaxYearChange(ty.label); };
+        el.appendChild(btn);
+    });
+}
+
+// ============================================================
+// OVERVIEW
+// ============================================================
+function renderOverview() {
+    const ty = selectedTaxYear;
+    const srt = assessSRT(ty);
+    const schengenNow = getSchengenDaysInWindow(_todayISO());
+    const schengenRemaining = 90 - schengenNow;
+
+    updateHeaderLocation();
+
+    const kpiEl = document.getElementById('kpi-overview');
+    const ukClass = srt.overallPass ? 'kpi-ok' : 'kpi-high';
+    const schClass = schengenRemaining > 30 ? 'kpi-ok' : schengenRemaining > 10 ? 'kpi-warn' : 'kpi-high';
+
+    const displayLimitLabel = `HMRC day band ${hmrcBandLabel(srt.ukDays, srt.leaverYear)} (RDR3, reference)${userLimitInline()}`;
+
+    kpiEl.innerHTML = `
+        <div class="kpi-card">
+            <div class="kpi-label">UK Days (${ty})</div>
+            <div class="kpi-value">${srt.ukDays}</div>
+            <div class="kpi-sub">${displayLimitLabel}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Schengen 90/180 rule</div>
+            <div class="kpi-value ${schClass}">${schengenNow} <span style="font-size:15px;font-weight:500;color:var(--text-3)">/ 90</span></div>
+            <div class="kpi-sub">days in the rolling 180-day window (immigration rule)</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">UK Work Days (${ty})</div>
+            <div class="kpi-value">${srt.ukWorkDays}</div>
+            <div class="kpi-sub">recorded · HMRC reference: fewer than 31 (overseas work test)</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Countries Visited (${ty})</div>
+            <div class="kpi-value">${Object.keys(srt.daysByCountry).length}</div>
+            <div class="kpi-sub">${Object.entries(srt.daysByCountry).sort((a,b) => b[1]-a[1]).slice(0,3).map(([c,d]) => `${c}: ${d}d`).join(', ')}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">SRT Record (${ty})</div>
+            <div class="kpi-value sm">${srt.ukDays} UK days</div>
+            <div class="kpi-sub">${npPathText(srt, ty)}</div>
+        </div>
+    `;
+
+    // Alerts — cascading logic (unchanged conditions)
+    const alertsEl = document.getElementById('alerts-container');
+    let alerts = '';
+    if (npYearOpen(ty)) {
+        alerts += `<div class="alert-card alert-info"><strong>${NP_OPEN_NOTE}.</strong> ${srt.ukDays} UK days, ${srt.ukWorkDays} UK work days and ${srt.tieCount} tie${srt.tieCount !== 1 ? 's' : ''} recorded to ${escHtml(fmtLong(NP.asOf))}. The per-test marks appear on the SRT tab once the tax year has ended. Not tax advice.</div>`;
+    } else if (!srt.overallPass) {
+        alerts += `<div class="alert-card alert-info"><strong>SRT record:</strong> ${srt.appliedDetail} See the SRT tab for the full RDR3 record and HMRC day bands. Not tax advice.</div>`;
+    } else if (!srt.test1Pass && srt.test2Pass) {
+        alerts += `<div class="alert-card alert-warn"><strong>Automatic overseas day count exceeded</strong> (${srt.ukDays} days; HMRC day-count figure is fewer than ${srt.autoLimit}). Test path in the records: <strong>Automatic Overseas — FT work overseas</strong>: ${srt.ukDays} UK days (&lt; 91) and ${srt.ukWorkDays} UK work days (&lt; 31). Automatic Resident still reviewed on SRT tab (must never be skipped). Not tax advice.</div>`;
+    } else if (!srt.test1Pass && !srt.test2Pass && srt.test3Pass) {
+        alerts += `<div class="alert-card alert-warn"><strong>Automatic Overseas figures not met; no Automatic Resident test met.</strong> Test path in the records: <strong>Sufficient Ties</strong>: ${srt.tieCount} tie${srt.tieCount !== 1 ? 's' : ''} recorded with ${srt.ukDays} UK days. See SRT tab for the full RDR3 record and HMRC day bands (reference only). Not tax advice.</div>`;
+    }
+    if (schengenRemaining <= 15) {
+        alerts += `<div class="alert-card alert-warn"><strong>Schengen 90/180 rule:</strong> ${schengenNow} days counted in the current 180-day window (the rule allows 90).</div>`;
+    }
+    alertsEl.innerHTML = alerts;
+
+    renderCountryTimelineBar('ctl-overview', 'ctl-overview-meta');
+    renderCountryPie(srt.daysByCountry);
+    renderMonthlyStacked();
+}
+
+function renderCountryPie(daysByCountry) {
+    const ctx = document.getElementById('chart-country-pie');
+    if (typeof Chart === 'undefined') return;
+    if (charts.countryPie) charts.countryPie.destroy();
+    applyChartTheme();
+
+    const labels = Object.keys(daysByCountry).sort((a,b) => daysByCountry[b] - daysByCountry[a]);
+    const data = labels.map(l => daysByCountry[l]);
+    const colors = labels.map(l => countryColor(l));
+    const narrow = window.innerWidth < 720;
+
+    charts.countryPie = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{ data: data, backgroundColor: colors, borderColor: cssVar('--surface'), borderWidth: 2, hoverOffset: 6 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            layout: { padding: 4 },
+            plugins: {
+                legend: { position: narrow ? 'bottom' : 'right', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 10, font: { size: 12 },
+                    generateLabels: chart => {
+                        const base = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
+                        return base.map((it, i) => ({ ...it, text: `${it.text}  ${data[i]}` }));
+                    } } },
+                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed} days` } }
+            }
+        }
+    });
+}
+
+function renderMonthlyStacked() {
+    const ctx = document.getElementById('chart-monthly-stacked');
+    if (typeof Chart === 'undefined') return;
+    if (charts.monthlyStacked) charts.monthlyStacked.destroy();
+    applyChartTheme();
+
+    const ty = TAX_YEARS.find(t => t.label === selectedTaxYear);
+    const months = [];
+    let d = new Date(ty.start.slice(0, 7) + '-01');
+    while (d <= new Date(ty.end) && d <= new Date()) {
+        months.push(d.toISOString().slice(0, 7));
+        d.setMonth(d.getMonth() + 1);
+    }
+
+    const countries = [...new Set(travelData.map(t => t.country))];
+    const datasets = countries.map(country => {
+        const data = months.map(month => {
+            const mStart = new Date(month + '-01');
+            const mEnd = new Date(mStart.getFullYear(), mStart.getMonth() + 1, 0);
+            let days = 0;
+            for (const t of travelData) {
+                if (t.country !== country) continue;
+                const s = new Date(Math.max(new Date(t.start), mStart, new Date(ty.start)));
+                const e = new Date(Math.min(new Date(t.end), mEnd, new Date(ty.end)));
+                if (s <= e) days += Math.floor((e - s) / 86400000) + 1;
+            }
+            return days;
+        });
+        return {
+            label: country,
+            data: data,
+            backgroundColor: countryColor(country),
+            borderRadius: 2,
+            borderSkipped: false,
+            maxBarThickness: 28
+        };
+    }).filter(ds => ds.data.some(v => v > 0));
+
+    const monthLabels = months.map(m => `${UI_MONTHS[parseInt(m.slice(5), 10) - 1]} ${m.slice(2, 4)}`);
+
+    charts.monthlyStacked = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: monthLabels, datasets: datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true } },
+                y: { stacked: true, beginAtZero: true, grid: { color: cssVar('--border') }, border: { display: false }, title: { display: true, text: 'Days' } }
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 10, font: { size: 11 } } }
+            }
+        }
+    });
+}
+
+// ============================================================
+// UK DAYS
+// ============================================================
+function renderUK() {
+    renderTaxYearSelector('uk-ty-selector', renderUK);
+    const ty = selectedTaxYear;
+    const srt = assessSRT(ty);
+    const ukTrips = travelData.filter(t => t.country === 'United Kingdom');
+    const tyObj = TAX_YEARS.find(t => t.label === ty);
+
+    const visitsInYear = [];
+    for (const t of ukTrips) {
+        const s = new Date(Math.max(new Date(t.start), new Date(tyObj.start)));
+        const e = new Date(Math.min(new Date(t.end), new Date(tyObj.end)));
+        if (s > e) continue;
+        const d = Math.floor((e - s) / 86400000) + 1;
+        visitsInYear.push({ ...t, effectiveDays: d });
+    }
+
+
+    document.getElementById('kpi-uk').innerHTML = `
+        <div class="kpi-card">
+            <div class="kpi-label">UK Days</div>
+            <div class="kpi-value">${srt.ukDays}</div>
+            <div class="kpi-sub">recorded in ${ty}${userLimitInline()}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">HMRC Day Band (RDR3)</div>
+            <div class="kpi-value sm">${hmrcBandLabel(srt.ukDays, srt.leaverYear)}</div>
+            <div class="kpi-sub">${hmrcBandsCaption(srt.leaverYear)}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">UK Visits</div>
+            <div class="kpi-value">${visitsInYear.length}</div>
+            <div class="kpi-sub">trips to UK in ${ty}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">UK Work Days</div>
+            <div class="kpi-value">${srt.ukWorkDays}</div>
+            <div class="kpi-sub">recorded · HMRC reference: fewer than 31 (overseas work test)</div>
+        </div>
+    `;
+
+    let summaryHtml = `<h4>SRT Summary for ${ty}</h4><p>`;
+    summaryHtml += `<strong>Status:</strong> ${srt.classification}.<br>`;
+    if (npYearOpen(ty)) {
+        summaryHtml += `<strong>${NP_OPEN_NOTE}.</strong> ${srt.ukDays} UK days recorded (HMRC day band ${hmrcBandLabel(srt.ukDays, srt.leaverYear)}, reference); ${srt.ukWorkDays} UK work days; ${srt.tieCount} tie${srt.tieCount !== 1 ? 's' : ''} recorded. The per-test marks appear once the tax year has ended.<br>`;
+    } else if (srt.test1Pass) {
+        summaryHtml += `<strong>Automatic overseas test: figures met.</strong> ${srt.ukDays} UK days; HMRC day-count figure is fewer than ${srt.autoLimit}.<br>`;
+    } else {
+        summaryHtml += `<strong>Automatic overseas test: figures not met.</strong> ${srt.ukDays} UK days; HMRC day-count figure is fewer than ${srt.autoLimit}.<br>`;
+        if (srt.isEmployedOverseas) {
+            if (srt.test2Pass) {
+                summaryHtml += `<strong>Full-time overseas work test: figures met.</strong> Employed overseas, ${srt.ukDays} days (&lt; 91) and ${srt.ukWorkDays} UK work days (&lt; 31).<br>`;
+            } else {
+                summaryHtml += `<strong>Full-time overseas work test: figures not met.</strong> `;
+                if (srt.ukDays >= 91) summaryHtml += `${srt.ukDays} UK days exceeds 90. `;
+                if (srt.ukWorkDays >= 31) summaryHtml += `${srt.ukWorkDays} UK work days exceeds 30. `;
+                summaryHtml += `<br>`;
+            }
+        } else {
+            summaryHtml += `<strong>Full-time overseas work test: N/A.</strong> Not recorded as working overseas full-time this year. Tell your assistant if this changes.<br>`;
+        }
+        summaryHtml += `<strong>Sufficient ties test:</strong> ${srt.tieCount} tie${srt.tieCount !== 1 ? 's' : ''} recorded; ${srt.ukDays} UK days recorded (HMRC day band ${hmrcBandLabel(srt.ukDays, srt.leaverYear)}). The HMRC day bands are on the SRT tab for reference.<br>`;
+    }
+    summaryHtml += `<strong>Note:</strong> A "UK day" = present at midnight. Transit days where you leave before midnight do not count.</p>`;
+    document.getElementById('uk-srt-summary').innerHTML = summaryHtml;
+
+    document.getElementById('uk-visits-meta').textContent = `${visitsInYear.length} visit${visitsInYear.length !== 1 ? 's' : ''} · ${srt.ukDays} days`;
+    const tbody = document.getElementById('uk-visits-body');
+    tbody.innerHTML = visitsInYear.map(v => `
+        <tr>
+            <td class="nowrap">${fmtDate(v.start)}</td>
+            <td class="nowrap">${fmtDate(v.end)}</td>
+            <td class="num"><strong>${v.effectiveDays}</strong></td>
+            <td class="nowrap">${v.purpose || ''}</td>
+            <td class="note">${noteCellHtml('stay', v)}</td>
+        </tr>
+    `).join('');
+}
+
+// ============================================================
+// SCHENGEN
+// ============================================================
+function renderSchengen() {
+    const today = _todayISO();
+    const schengenNow = getSchengenDaysInWindow(today);
+    const schengenLeft = 90 - schengenNow;
+    const schClass = schengenLeft > 30 ? 'kpi-ok' : schengenLeft > 10 ? 'kpi-warn' : 'kpi-high';
+
+    let nextFreeDate = 'N/A';
+    const todayD = new Date(today);
+    for (let i = 0; i < 180; i++) {
+        const checkDate = new Date(todayD);
+        checkDate.setDate(checkDate.getDate() + i);
+        const daysOnDate = getSchengenDaysInWindow(checkDate.toISOString().slice(0, 10));
+        if (daysOnDate < schengenNow) {
+            nextFreeDate = checkDate.toISOString().slice(0, 10);
+            break;
+        }
+    }
+
+    document.getElementById('kpi-schengen').innerHTML = `
+        <div class="kpi-card">
+            <div class="kpi-label">Schengen Days Used</div>
+            <div class="kpi-value ${schClass}">${schengenNow}</div>
+            <div class="kpi-sub">in last 180 days</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Schengen 90/180 Rule</div>
+            <div class="kpi-value ${schClass}">${schengenLeft}</div>
+            <div class="kpi-sub">days left of the rule's 90 in this window</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Next Day Frees Up</div>
+            <div class="kpi-value sm">${fmtDate(nextFreeDate)}</div>
+            <div class="kpi-sub">when oldest Schengen day exits window</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Window Period</div>
+            <div class="kpi-value sm">${fmtDate(new Date(new Date().setDate(new Date().getDate() - 179)).toISOString().slice(0,10))}</div>
+            <div class="kpi-sub">to ${fmtDate(today)}</div>
+        </div>
+    `;
+
+    renderSchengenChart();
+
+    const schengenTrips = travelData.filter(t => SCHENGEN_COUNTRIES.has(t.country));
+    schengenTrips.sort((a,b) => new Date(b.start) - new Date(a.start));
+    document.getElementById('schengen-visits-body').innerHTML = schengenTrips.map(t => {
+        const days = daysBetween(t.start, t.end);
+        return `<tr>
+            <td><span class="dot" style="background:${countryColor(t.country)}"></span>${t.country}</td>
+            <td class="nowrap">${fmtDate(t.start)}</td>
+            <td class="nowrap">${fmtDate(t.end)}</td>
+            <td class="num"><strong>${days}</strong></td>
+        </tr>`;
+    }).join('');
+}
+
+function renderSchengenChart() {
+    const ctx = document.getElementById('chart-schengen-rolling');
+    if (typeof Chart === 'undefined') return;
+    if (charts.schengenRolling) charts.schengenRolling.destroy();
+    applyChartTheme();
+
+    const labels = [];
+    const data = [];
+    const today = new Date();
+    const start = new Date(today);
+    start.setMonth(start.getMonth() - 12);
+
+    for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 7)) {
+        const dateStr = d.toISOString().slice(0, 10);
+        labels.push(dateStr);
+        data.push(getSchengenDaysInWindow(dateStr));
+    }
+    labels.push(today.toISOString().slice(0, 10));
+    data.push(getSchengenDaysInWindow(today.toISOString().slice(0, 10)));
+
+    const accent = cssVar('--accent');
+    charts.schengenRolling = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Schengen Days in 180-day Window',
+                    data: data,
+                    borderColor: accent,
+                    backgroundColor: 'rgba(99, 102, 241, 0.10)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                },
+                {
+                    label: 'Schengen 90/180 rule (90 days)',
+                    data: labels.map(() => 90),
+                    borderColor: cssVar('--bad'),
+                    borderWidth: 1.5,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'line', padding: 15 } },
+                tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} days` } }
+            },
+            scales: {
+                x: { type: 'time', time: { unit: 'month', displayFormats: { month: 'MMM yyyy' } }, grid: { display: false } },
+                y: { beginAtZero: true, max: 100, grid: { color: cssVar('--border') }, border: { display: false }, title: { display: true, text: 'Days' } }
+            }
+        }
+    });
+}
+
+// ============================================================
+// TIMELINE
+// ============================================================
+function renderTimeline() {
+    renderTaxYearSelector('timeline-ty-selector', renderTimeline);
+    const tyObj = TAX_YEARS.find(t => t.label === selectedTaxYear);
+    const trips = getTripsInTaxYear(selectedTaxYear);
+    trips.sort((a,b) => new Date(a.start) - new Date(b.start));
+
+    renderCountryTimelineBar('ctl-timeline', 'ctl-timeline-meta');
+    document.getElementById('timeline-meta').textContent = `${trips.length} trips · ${selectedTaxYear}`;
+
+    const el = document.getElementById('timeline-body');
+    el.innerHTML = trips.map(t => {
+        const days = daysBetween(
+            new Date(Math.max(new Date(t.start), new Date(tyObj.start))).toISOString().slice(0,10),
+            new Date(Math.min(new Date(t.end), new Date(tyObj.end))).toISOString().slice(0,10)
+        );
+        const isUK = t.country === 'United Kingdom';
+        const isSch = SCHENGEN_COUNTRIES.has(t.country);
+        const tagClass = isUK ? 'tag-uk' : isSch ? 'tag-schengen' : '';
+        const tagText = isUK ? 'UK' : isSch ? 'Schengen' : '';
+        const inferred = (t.notes || '').includes('[INFERRED]');
+
+        return `<tr${inferred ? ' class="row-inferred"' : ''}>
+            <td class="nowrap">${fmtDate(t.start)} → ${fmtDate(t.end)}</td>
+            <td class="nowrap"><span class="dot" style="background:${countryColor(t.country)}"></span><strong>${escHtml(t.country)}</strong></td>
+            <td class="num">${days}d</td>
+            <td>${tagText ? `<span class="timeline-tag ${tagClass}">${tagText}</span>` : '<span class="sub">—</span>'}</td>
+            <td class="note">${noteCellHtml('stay', t)}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ============================================================
+// WORK DAYS
+// ============================================================
+function renderWork() {
+    renderTaxYearSelector('work-ty-selector', renderWork);
+    const ty = selectedTaxYear;
+    const tyWork = workData.filter(w => getTaxYear(w.date) === ty);
+    const ukWork = tyWork.filter(w => w.uk === 'yes');
+    const overseasWork = tyWork.filter(w => w.uk === 'no');
+    const inferredCount = ukWork.filter(w => (w.notes || '').includes('Inferred')).length;
+    const confirmedCount = ukWork.length - inferredCount;
+
+    document.getElementById('kpi-work').innerHTML = `
+        <div class="kpi-card">
+            <div class="kpi-label">UK Work Days (${ty})</div>
+            <div class="kpi-value">${ukWork.length}</div>
+            <div class="kpi-sub">recorded${(NP.workUnsure || {})[ty] ? ' · ' + NP.workUnsure[ty] + ' marked unsure (not counted)' : ''}${inferredCount ? '<br><span style="color:var(--warn-text)">'+inferredCount+' inferred, '+confirmedCount+' confirmed</span>' : ''}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Overseas Work Days</div>
+            <div class="kpi-value kpi-ok">${overseasWork.length}</div>
+            <div class="kpi-sub">evidence of overseas work</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Total Work Days</div>
+            <div class="kpi-value">${tyWork.length}</div>
+            <div class="kpi-sub">all locations (${ty})</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">HMRC Work Figure (RDR3)</div>
+            <div class="kpi-value sm">Fewer than 31</div>
+            <div class="kpi-sub">reference only · full-time work overseas test · ${ukWork.length} UK work days recorded</div>
+        </div>
+    `;
+
+    document.getElementById('work-log-title').textContent = `Work Day Log — ${ty} (${tyWork.length} entries)`;
+
+    const tbody = document.getElementById('work-log-body');
+    const sorted = [...tyWork].sort((a,b) => new Date(b.date) - new Date(a.date));
+    tbody.innerHTML = sorted.map(w => {
+        const isInferred = (w.notes || '').includes('Inferred');
+        return `<tr${isInferred ? ' class="row-inferred"' : ''}>
+            <td class="nowrap">${fmtDate(w.date)}</td>
+            <td class="nowrap">${escHtml(w.location)}</td>
+            <td class="num">${w.hours != null && w.hours !== '' ? w.hours + 'h' : '—'}</td>
+            <td>${w.uk === 'yes' ? '<span class="status-badge tag-uk">UK</span>' : '<span class="status-badge status-ok">Overseas</span>'}</td>
+            <td class="note">${noteCellHtml('work', w)}${isInferred ? '<span class="status-badge tag-inferred">Inferred</span>' : ''}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ============================================================
+// SRT STATUS
+// ============================================================
+function renderSRT() {
+    renderTaxYearSelector('srt-ty-selector', renderSRT);
+    const ty = selectedTaxYear;
+    const npOpen = npYearOpen(ty);
+    const srt = assessSRT(ty);
+    const config = taxYearConfig[ty] || {};
+    const tiesNotes = config.tiesNotes || {};
+    const ao = srt.autoOverseas;
+    const ar = srt.autoResident;
+
+    function badge(kind, label) {
+        const cls = {
+            met: 'status-ok',
+            notmet: 'status-high',
+            grey: 'status-grey',
+            na: 'status-muted',
+            trigger: 'status-trigger',
+            disqualified: 'status-disqualified',
+            decide: 'status-ok',
+            muted: 'status-muted'
+        }[kind] || 'status-muted';
+        if (npOpen && (['met', 'notmet', 'trigger', 'disqualified', 'na'].includes(kind) || /^NOT REACHED/.test(label))) {
+            return `<span class="status-badge status-muted">FIGURES SO FAR</span>`;
+        }
+        return `<span class="status-badge ${cls}">${label}</span>`;
+    }
+
+    function ftOverseasBadge() {
+        if (ao.ftWorkStatus === 'claimed' && ao.ftWorkPass) return badge('met', 'CLAIMED');
+        if (ao.ftWorkStatus === 'grey') return badge('grey', 'GREY');
+        if (ao.ftWorkStatus === 'claimed' && !ao.ftNumericOk) return badge('notmet', 'NOT MET (numeric)');
+        return badge('notmet', 'NOT CLAIMED / N/A');
+    }
+
+    const pathwayLabels = {
+        automatic_overseas: 'Ends at Automatic Overseas figures',
+        automatic_resident: 'Ends at Automatic UK tests',
+        sufficient_ties: 'Reached Sufficient Ties'
+    };
+
+    let yearCallout = '';
+    const yn = config.yearNote;
+    if (npYearOpen(ty) || yn) {
+        yearCallout = `<div class="callout">
+            <div class="srt-step-title">${yn ? escHtml(yn.title) : `${ty} is still in progress`}</div>
+            <p>${yn ? escHtml(yn.text) + ' ' : ''}${npYearOpen(ty) ? `${NP_OPEN_NOTE} (counted to ${escHtml(fmtLong(NP.asOf))}). The per-test marks and the pathway are shown once the tax year has ended.` : ''}
+            <em>Not tax advice — record-keeping and evidence pointers only.</em></p>
+        </div>`;
+    }
+
+    const step1Deciding = !npOpen && srt.pathway === 'automatic_overseas';
+    const step2Deciding = !npOpen && srt.pathway === 'automatic_resident';
+    const step3Deciding = !npOpen && srt.pathway === 'sufficient_ties';
+    const step3Muted = !npOpen && !srt.sufficientTiesReached;
+
+    document.getElementById('srt-result').innerHTML = `
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-label">Classification</div>
+                <div class="kpi-value sm">${srt.classification}</div>
+                <div class="kpi-sub">${escHtml(srt.leaverSub)}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">SRT Record</div>
+                <div class="kpi-value sm">${srt.ukDays} UK days recorded</div>
+                <div class="kpi-sub">${npPathText(srt, ty)}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Pathway</div>
+                <div class="kpi-value sm">${npOpen ? NP_OPEN_NOTE : (pathwayLabels[srt.pathway] || srt.pathway)}</div>
+                <div class="kpi-sub">HMRC RDR3 order</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">UK Days / Ties</div>
+                <div class="kpi-value">${srt.ukDays} <span style="font-size:15px;font-weight:500;color:var(--text-3)">/ ${srt.tieCount} ties</span></div>
+                <div class="kpi-sub">${srt.sufficientTiesReached || npOpen ? 'UK days / ties recorded (count only)' : 'ties stage ' + (step3Muted ? 'not reached' : 'active')}</div>
+            </div>
+        </div>
+
+        ${yearCallout}
+
+        <div class="card-head" style="margin-top:4px"><h3 style="font-size:16px">SRT cascade — HMRC RDR3 order</h3><span class="meta">${npOpen ? NP_OPEN_NOTE : (pathwayLabels[srt.pathway] || srt.pathway)}</span></div>
+        <div class="srt-flow">
+            <div class="srt-step ${step1Deciding ? 'deciding' : ''}">
+                <div class="srt-step-header">
+                    <div class="srt-step-title"><span class="srt-step-num">1</span>Automatic Overseas</div>
+                    ${ao.met ? badge('met', 'FIGURES MET') : badge('notmet', 'NOT MET — CONTINUE')}
+                </div>
+                <p class="srt-step-lede">Any one sub-test met → this stage ends here. Otherwise continue to Automatic Resident.</p>
+                <div class="srt-subtests">
+                    <div class="srt-subtest">
+                        <div><strong>Day-count overseas</strong>
+                        <span class="hint">&lt;${srt.autoLimit} UK days (leaver) / &lt;46 if not previously resident</span></div>
+                        <div>${ao.dayCountPass ? badge('met', 'MET') : badge('notmet', 'NOT MET')}</div>
+                        <div class="subdetail always">${srt.ukDays} UK days (HMRC figure: fewer than ${srt.autoLimit}). ${npOpen ? '' : (ao.dayCountPass ? 'Day-count figure met.' : 'Day-count figure not met.')}</div>
+                    </div>
+                    <div class="srt-subtest ${ao.ftWorkStatus === 'grey' ? 'open' : ''}">
+                        <div><strong>Full-time work overseas</strong>
+                        <span class="hint">&lt;91 UK days AND &lt;31 UK work days of 3+ hours; flag grey for mid-year end / contractor / significant break</span></div>
+                        <div>${ftOverseasBadge()}</div>
+                        <div class="subdetail always">
+                            Status: <strong>${({claimed: 'CLAIMED', not_claimed: 'NOT CLAIMED', grey: 'GREY'}[ao.ftWorkStatus] || (ao.ftWorkStatus || '').toUpperCase())}</strong>.
+                            UK days ${srt.ukDays}${npOpen ? '' : ` (&lt;91 ${ao.ftNumericOk && srt.ukDays < 91 ? '✓' : srt.ukDays < 91 ? '✓' : '✗'})`},
+                            UK work days ${srt.ukWorkDays}${npOpen ? '' : ` (&lt;31 ${srt.ukWorkDays < 31 ? '✓' : '✗'})`}.
+                            ${(ao.notes || []).map(n => `<br>• ${escHtml(n)}`).join('') || ''}
+                        </div>
+                    </div>
+                </div>
+                <p class="srt-disclaimer">Evidence pointers only — not tax advice. Work answers come from your profile.</p>
+            </div>
+
+            <div class="srt-connector">if Automatic Overseas not met</div>
+
+            <div class="srt-step ${step2Deciding ? 'deciding risk' : ''} ${!npOpen && srt.pathway === 'automatic_overseas' ? 'muted' : ''}">
+                <div class="srt-step-header">
+                    <div class="srt-step-title"><span class="srt-step-num">2</span>Automatic UK Resident</div>
+                    ${ar.anyTrigger ? badge('trigger', 'TRIGGERED') : badge('disqualified', 'NONE MET')}
+                </div>
+                <p class="srt-step-lede">
+                    <strong>Never skip this stage.</strong> Any one sub-test met ends here. If none is met, continue to Sufficient Ties.
+                    ${!npOpen && srt.pathway === 'automatic_overseas' ? ' <em>(Shown for awareness — the figures already end at stage 1.)</em>' : ''}
+                </p>
+                <div class="srt-subtests">
+                    ${ar.detailNotes.map((p, idx) => {
+                        const isTrigger = !!p.triggers;
+                        return `<div class="srt-subtest" id="ar-detail-${idx}">
+                            <div><strong>${p.test}</strong>
+                                <div><button type="button" class="srt-detail-toggle" onclick="(function(el){var p=el.parentElement.parentElement.parentElement;p.classList.toggle('open');el.textContent=p.classList.contains('open')?'Hide details':'Show details';})(this)">Show details</button></div>
+                            </div>
+                            <div>${isTrigger ? badge('trigger', 'TRIGGERED') : badge('disqualified', 'NOT MET')}</div>
+                            <div class="subdetail">${escHtml(p.text)}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <p class="srt-disclaimer">Home-test vs accommodation-tie distinction is a grey/advice area. Position + evidence pointers recorded; not legal advice.</p>
+            </div>
+
+            <div class="srt-connector">only if the Automatic Overseas figures are not met AND no Automatic Resident test is met</div>
+
+            <div class="srt-step ${step3Deciding ? 'deciding' : ''} ${step3Muted ? 'muted' : ''}">
+                <div class="srt-step-header">
+                    <div class="srt-step-title"><span class="srt-step-num">3</span>Sufficient Ties (leavers table)</div>
+                    ${step3Muted
+                        ? badge('muted', srt.pathway === 'automatic_overseas' ? 'NOT REACHED — figures end at Automatic Overseas' : (srt.pathway === 'automatic_resident' ? 'NOT REACHED — Automatic Resident triggered' : 'NOT REACHED'))
+                        : badge('na', 'STAGE REACHED')}
+                </div>
+                <p class="srt-step-lede" style="margin-bottom:0">
+                    ${npOpen ? `${srt.tieCount} tie${srt.tieCount!==1?'s':''} recorded; ${srt.ukDays} UK days recorded. HMRC day bands are shown below for reference.` : step3Muted
+                        ? `<em>Muted — Sufficient Ties not applied this year because the figures end at an earlier stage (${pathwayLabels[srt.pathway]}).</em>`
+                        : `Reached because Automatic Overseas was <strong>not</strong> met and no Automatic Resident test triggered. ${srt.tieCount} tie${srt.tieCount!==1?'s':''} recorded; ${srt.ukDays} UK days recorded. HMRC day bands are shown below for reference.`}
+                </p>
+            </div>
+        </div>
+    `;
+
+    // Open the first Automatic Resident detail by default
+    setTimeout(() => {
+        const firstAr = document.getElementById('ar-detail-0');
+        if (firstAr) {
+            firstAr.classList.add('open');
+            const btn = firstAr.querySelector('.srt-detail-toggle');
+            if (btn) btn.textContent = 'Hide details';
+        }
+    }, 0);
+
+    document.getElementById('srt-config').innerHTML = `
+        <div class="form-card">
+            <div class="card-head"><h3>Employment Status (${ty})</h3></div>
+            <div class="table-scroll flat">
+            <table class="kv">
+                <tbody>
+                    <tr><td>Full-Time Employed Overseas?</td><td>${config.employedOverseasFulltime ? 'Yes' : 'No'}</td></tr>
+                    <tr><td>FT overseas assessment</td><td>${({claimed: 'CLAIMED', not_claimed: 'NOT CLAIMED', grey: 'GREY'}[ao.ftWorkStatus] || (ao.ftWorkStatus || '').toUpperCase())} ${ao.ftWorkStatus === 'grey' ? '(contested / advice area)' : ''}</td></tr>
+                    <tr><td>Work type</td><td>${escHtml(config.employer || 'N/A')}</td></tr>
+                    <tr><td>Employment Start</td><td>${escHtml(config.employmentStart || 'N/A')}</td></tr>
+                    <tr><td>Employment End</td><td>${escHtml(config.employmentEnd || 'N/A')}</td></tr>
+                </tbody>
+            </table>
+            </div>
+            <p class="srt-disclaimer" style="margin-top:30px">
+                To change your work or Automatic Resident answers, tell your assistant, then ask it to rebuild the dashboard. Not tax advice.
+            </p>
+        </div>
+    `;
+
+    const tiesDef = [
+        { key: 'family', label: 'Family Tie', desc: 'Spouse, civil partner, or minor child living in UK', auto: false },
+        { key: 'accommodation', label: 'Accommodation Tie', desc: 'UK property available for 91+ continuous days, used for 1+ night', auto: false },
+        { key: 'work', label: 'Work Tie', desc: '40+ days working 3+ hours in UK (auto-set if work log shows 40+)', auto: false },
+        { key: 'ninetyDay', label: '90-Day Tie', desc: 'More than 90 days in the UK in either of the previous 2 tax years', auto: true },
+        { key: 'country', label: 'Country Tie (leavers)', desc: 'UK is the country where most days were spent', auto: true },
+    ];
+
+    document.getElementById('srt-ties').innerHTML = `
+        <div class="form-card ${step3Muted ? 'srt-step muted' : ''}">
+            <div class="card-head"><h3>UK Ties Configuration (${ty})${step3Muted ? ' — stage not reached' : ''}</h3><span class="meta">${srt.tieCount} tie${srt.tieCount !== 1 ? 's' : ''}</span></div>
+            <div class="table-scroll flat">
+            <table>
+                <thead><tr><th>Tie</th><th>Status</th><th>Source</th><th>Notes</th></tr></thead>
+                <tbody>
+                    ${tiesDef.map(td => {
+                        const resolved = srt.resolvedTies[td.key];
+                        let sourceLabel = 'Your answer';
+                        if (td.key === 'ninetyDay') sourceLabel = `Auto: ${srt.has90DayTie ? 'Yes' : 'No'} (previous 2 tax years: your log and your answers)`;
+                        else if (td.key === 'country') sourceLabel = `Auto: top country = ${srt.maxCountry ? srt.maxCountry[0] + ' (' + srt.maxCountry[1] + 'd)' : 'N/A'}`;
+                        else if (td.key === 'work' && srt.ukWorkDays >= 40) sourceLabel = `Auto: ${srt.ukWorkDays} UK work days (>= 40)`;
+                        return `<tr>
+                            <td style="min-width:200px"><strong>${td.label}</strong><span class="sub" style="display:block">${td.desc}</span></td>
+                            <td>${resolved ? '<span class="status-badge status-muted">Yes</span>' : '<span class="status-badge status-muted">No</span>'}</td>
+                            <td class="sub" style="min-width:150px">${sourceLabel}</td>
+                            <td class="note">${escHtml(tiesNotes[td.key] || '')}</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('srt-detail').innerHTML = `
+        <div class="table-card">
+            <div class="card-head"><h3>HMRC day bands (RDR3, ${hmrcDayBands(srt.leaverYear).who}s) — reference only</h3><span class="meta">${srt.ukDays} UK days · ${srt.tieCount} tie${srt.tieCount !== 1 ? 's' : ''} recorded</span></div>
+            <p class="card-sub" style="padding:0 20px">HMRC's table, reproduced for reference. The right-hand column is the number of UK ties at which HMRC's table treats each day band as UK resident. This page does not set a personal figure for you; you can enter Your own limit on the hero card.</p>
+            <div class="table-scroll flat">
+            <table>
+                <thead><tr><th>UK days in the tax year</th><th>HMRC table (RDR3)</th><th>Your record</th></tr></thead>
+                <tbody>
+                    ${hmrcDayBands(srt.leaverYear).rows.map(r => {
+                        const inBand = srt.ukDays >= r.lo && srt.ukDays <= r.hi;
+                        return `<tr class="${inBand ? 'row-band' : ''}">
+                            <td>${r.band}</td>
+                            <td>${r.ref}</td>
+                            <td>${inBand ? srt.ukDays + ' UK days recorded' : ''}</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <h4>Key Dates</h4>
+            <p>
+            ${(NP.keyDates || []).map(k => `<strong>${escHtml(k.date)}:</strong> ${escHtml(k.text)}<br>`).join('') || 'Add the date you left the UK to your profile to see key dates here.<br>'}
+            <strong>Employment evidence:</strong> keep your contract or engagement letters, and any letter that changes or ends them, with your records (see the Documentation tab).<br>
+            <strong>Disclaimer:</strong> This dashboard is a record-keeping and evidence trail tool — not tax advice.
+            </p>
+        </div>
+    `;
+
+    const challenges = runAuditChallenges(ty);
+    const sevLabels = { high: 'CHALLENGE', warn: 'WARNING', info: 'NOTE' };
+
+    document.getElementById('srt-audit').innerHTML = `
+        <div class="form-card">
+            <div class="card-head"><h3>Audit Challenges (${challenges.length})</h3><span class="meta">Click a challenge for details</span></div>
+            <p class="card-sub">
+                These challenges cross-reference your manual settings against actual travel and work data.
+                They flag potential errors, risks, and things to verify with a tax adviser.
+            </p>
+            ${challenges.length === 0 ? '<p class="all-clear">No challenges detected for this tax year.</p>' :
+            `<div class="audit-list">${challenges.map(c => {
+                const sev = sevLabels[c.severity] ? c.severity : 'info';
+                return `<details class="audit-item sev-${sev}"${sev === 'high' ? ' open' : ''}>
+                    <summary><span class="sev-label">${sevLabels[sev]}</span><span>${escHtml(c.title)}</span></summary>
+                    <div class="audit-body">${c.detail}</div>
+                </details>`;
+            }).join('')}</div>`}
+        </div>
+    `;
+}
+
+// ============================================================
+// DOCUMENTATION
+// ============================================================
+const DOC_ICONS = {
+    airbnb: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+    bank: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6.5 15h4"/>',
+    gov: '<path d="M3 21h18M4 10h16M12 3l9 5H3zM6 10v8M10 10v8M14 10v8M18 10v8"/>',
+    tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3 17.8V21h3.2l6.3-6.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+    flight: '<path d="M2.5 13.5 21 6l-4 14-4.5-5-4 3v-5z"/>',
+    calendar: '<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>'
+};
+
+
+// ============================================================
+// NOTES — bot bullets (from the day log) + "Your note" (saved in this browser; export to keep)
+// ============================================================
+const NOTES_STORE_KEY = 'nomad-pro-dashboard-notes-v1';
+function _loadUserNotes() { try { return JSON.parse(localStorage.getItem(NOTES_STORE_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function _saveUserNotes(o) { try { localStorage.setItem(NOTES_STORE_KEY, JSON.stringify(o)); return true; } catch (e) { return false; } }
+function noteKey(kind, start, end) { return `${kind}:${start}..${end}`; }
+function _rowRange(kind, row) { return kind === 'work' ? [row.date, row.date] : [row.start, row.end]; }
+function _currentUserNote(key, seeded) { const s = _loadUserNotes(); return Object.prototype.hasOwnProperty.call(s, key) ? (s[key].text || '') : (seeded || ''); }
+function _userNoteInner(text) {
+    return `<div class="user-note-head"><span class="user-note-label">Your note</span>`
+        + `<button type="button" class="note-btn" onclick="editUserNote(this)">${text ? 'Edit' : 'Add note'}</button></div>`
+        + `<div class="user-note-text">${text ? escHtml(text) : '<span class="user-note-empty">No note yet</span>'}</div>`;
+}
+function noteCellHtml(kind, row) {
+    const [start, end] = _rowRange(kind, row);
+    const key = noteKey(kind, start, end);
+    const text = _currentUserNote(key, row.userNote);
+    const bullets = (row.bullets || []).map(b => `<li>${escHtml(b)}</li>`).join('');
+    return `<ul class="note-bullets">${bullets}</ul>`
+        + `<div class="user-note" data-key="${escHtml(key)}" data-kind="${kind}" data-start="${start}" data-end="${end}" data-country="${escHtml(row.country || row.location || '')}" data-text="${escHtml(text)}">${_userNoteInner(text)}</div>`;
+}
+function editUserNote(btn) {
+    const box = btn.closest('.user-note');
+    box.innerHTML = `<div class="user-note-head"><span class="user-note-label">Your note</span></div>`
+        + `<textarea class="user-note-input" rows="3" aria-label="Your note"></textarea>`
+        + `<div class="user-note-actions"><button type="button" class="note-btn primary" onclick="saveUserNote(this)">Save</button>`
+        + `<button type="button" class="note-btn" onclick="cancelUserNote(this)">Cancel</button>`
+        + `<span class="user-note-hint">Saved in this browser on this device until you export your notes.</span></div>`;
+    const ta = box.querySelector('textarea'); ta.value = box.dataset.text || ''; ta.focus();
+}
+function cancelUserNote(btn) { const box = btn.closest('.user-note'); box.innerHTML = _userNoteInner(box.dataset.text || ''); }
+function saveUserNote(btn) {
+    const box = btn.closest('.user-note');
+    const text = box.querySelector('textarea').value.trim();
+    const store = _loadUserNotes();
+    store[box.dataset.key] = { text, kind: box.dataset.kind, start: box.dataset.start, end: box.dataset.end, country: box.dataset.country, updated_at: new Date().toISOString() };
+    if (!_saveUserNotes(store)) {
+        const hint = box.querySelector('.user-note-hint');
+        if (hint) hint.textContent = 'This browser blocked saving. Copy your note somewhere else.';
+        return;
+    }
+    box.dataset.text = text;
+    box.innerHTML = _userNoteInner(text);
+}
+function exportUserNotes() {
+    const store = _loadUserNotes(); const out = {};
+    const add = (kind, row) => {
+        const [start, end] = _rowRange(kind, row); const key = noteKey(kind, start, end);
+        if (row.userNote && !Object.prototype.hasOwnProperty.call(store, key))
+            out[key] = { key, kind, start, end, country: row.country || row.location || '', text: row.userNote, updated_at: null };
+    };
+    travelData.forEach(t => add('stay', t)); workData.forEach(w => add('work', w));
+    Object.entries(store).forEach(([key, v]) => { out[key] = { key, ...v }; });
+    const payload = { format: 'nomad-pro-dashboard-notes', version: 1, exported_at: new Date().toISOString(), user_limit: _userLimitExport(), notes: Object.values(out) };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `nomad-pro-notes-${_todayISO()}.json`;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function renderDocs() {
+    const el = document.getElementById('docs-list');
+    el.innerHTML = `<div class="card-head"><h3>Evidence &amp; Documentation Pointers</h3><span class="meta">${docsData.length} sources</span></div><div class="doc-grid">` +
+        docsData.map(d => {
+            const icon = DOC_ICONS[d.type] || DOC_ICONS.tool;
+            const isUrl = /^https?:\/\//.test(d.link || '');
+            return `<div class="doc-item">
+                <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></div>
+                <div class="doc-details">
+                    <div class="doc-title">${escHtml(d.title)}</div>
+                    <div class="doc-desc">${escHtml(d.desc)}</div>
+                    ${isUrl ? `<a class="doc-link" href="${escHtml(d.link)}" target="_blank" rel="noopener">${escHtml(d.linkText || d.link)}</a>` : ''}${d.where ? `<div class="doc-where">${escHtml(d.where)}</div>` : ''}
+                </div>
+            </div>`;
+        }).join('') + '</div>';
+}
+
+// ============================================================
+// PRINT + COLOUR-SCHEME SUPPORT (presentation only)
+// ============================================================
+window.addEventListener('beforeprint', () => {
+    try {
+        renderUK(); renderTimeline(); renderWork(); renderSRT(); renderDocs();
+        document.querySelectorAll('.srt-subtest').forEach(s => s.classList.add('open'));
+        document.querySelectorAll('details.audit-item').forEach(d => d.setAttribute('open', ''));
+    } catch (e) { /* printing should never break the page */ }
+});
+if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const rerender = () => renderActiveSection();
+    if (mq.addEventListener) mq.addEventListener('change', rerender);
+}
+let _uiResizeTimer = null;
+let _uiLastNarrow = window.innerWidth < 720;
+window.addEventListener('resize', () => {
+    clearTimeout(_uiResizeTimer);
+    _uiResizeTimer = setTimeout(() => {
+        const narrow = window.innerWidth < 720;
+        if (narrow !== _uiLastNarrow) { _uiLastNarrow = narrow; renderActiveSection(); }
+    }, 200);
+});
+
+// ============================================================
+// INIT
+// ============================================================
+loadData();
+renderTaxYearSelector('global-ty-selector');
+renderHero();
+renderGapBanner();
+renderOverview();
+updateHeaderLocation();
+document.getElementById('last-updated').textContent = NP.lastUpdated || '';
+// Deep link: dashboard.html#tab=srt&ty=2025/26 opens that tab and tax year (used for screenshots).
+(function () {
+    const q = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    const ty = q.get('ty'), tab = q.get('tab');
+    if (ty && TAX_YEARS.some(t => t.label === ty)) onTaxYearChange(ty);
+    if (tab && document.getElementById('section-' + tab)) switchTab(tab);
+})();
+</script>
+</body>
+</html>

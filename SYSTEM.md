@@ -134,7 +134,7 @@ The tools, schemas, templates and a baseline HMRC guidance mirror live in the **
 | `~/nomad-pro-engine/tools/srt_engine.py summary daylog.json --as-of <today>` | All counts, ties inputs, Table A/B band, room + proximity, stage lines, open questions, Schengen and stay limits |
 | `~/nomad-pro-engine/tools/srt_engine.py plan daylog.json --trip CC:FIRST_NIGHT:LAST_NIGHT` | Models proposed trips against the log (repeat `--trip` once per trip) |
 | `~/nomad-pro-engine/tools/srt_engine.py validate daylog.json` | Schema/consistency check after every write |
-| `~/nomad-pro-engine/tools/render_dashboard.py` | HTML dashboard: counts only, no residence outcome |
+| `~/nomad-pro-engine/tools/render_dashboard.py` | HTML dashboard (tabbed SRT design), built only when the user asks: counts only, no residence outcome, no limit from the ties band; `--import-notes` merges the user's exported notes |
 | `~/nomad-pro-engine/tools/render_pdf.py --tax-year YYYY/YY` | "Travel and day log" PDF + CSV |
 | `~/nomad-pro-engine/tools/travel_rules_check.py` | Re-reads GOV.UK entry requirements, flags changes and plan conflicts |
 | `~/nomad-pro-engine/tools/hmrc_watch.py --kb hmrc/` | Compares every knowledge-base page with live gov.uk |

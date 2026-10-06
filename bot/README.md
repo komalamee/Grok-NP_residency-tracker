@@ -15,7 +15,7 @@ is not changed by anything in here; each user's bot installs it from `main` into
 
 | Path | What it is |
 |---|---|
-| `create_bot_share_json.args.json` | The exact arguments published as version 6. Generated; don't hand-edit |
+| `create_bot_share_json.args.json` | The arguments for the next staging (v2.1 draft: 91,911 bytes). Version 6 as published is this file at commit `606861e`. Generated; don't hand-edit |
 | `build.py` | Builds those arguments from `skills/` and `TEMPLATE-PACKAGE.md` |
 | `TEMPLATE-PACKAGE.md` | The package spec: keep line, description, skill list, memories, plugins, the six routines (cron and job text, which `build.py` reads) and the travel-log Sheet |
 | `PACKAGING.md` | Which skills ship and which are excluded, with reasons |
@@ -63,6 +63,12 @@ section 4), so each of them opens with a `banned-list` start comment that exempt
 private-data check still runs over them.
 
 ## Changelog
+
+### v2.1 — draft, not staged or published
+
+* **"Check my setup".** New `onboarding` section J (and its trigger in the `onboarding` description): one line each for the engine, travel log Sheet, Calendar, Gmail, Drive, routines and last backup, counts and links only, with what a failure stops and the fix. Also run once right after a connection is added.
+* **Dropped-connection heads-up.** `nomad-pro-core-rules` §9: when Calendar or Gmail worked and now fails, one line once in the next check-in (what it stops, and 'Reconnect it, then say "check my setup".'), no repeat until it works again, so routines don't go quiet unnoticed.
+* Args 91,338 → 91,911 bytes (rule: 92,000). Needs a restage from the bot that owns the listing to reach new installs.
 
 ### v2 — published 28 September 2026 (template version 6)
 
