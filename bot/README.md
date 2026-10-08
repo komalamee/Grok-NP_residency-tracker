@@ -15,9 +15,9 @@ is not changed by anything in here; each user's bot installs it from `main` into
 
 | Path | What it is |
 |---|---|
-| `create_bot_share_json.args.json` | The arguments for the next staging (v2.1 draft: 91,911 bytes). Version 6 as published is this file at commit `606861e`. Generated; don't hand-edit |
+| `create_bot_share_json.args.json` | The arguments for the next staging (v2.2 draft: 91,470 bytes). Version 6 as published is this file at commit `606861e`. Generated; don't hand-edit |
 | `build.py` | Builds those arguments from `skills/` and `TEMPLATE-PACKAGE.md` |
-| `TEMPLATE-PACKAGE.md` | The package spec: keep line, description, skill list, memories, plugins, the six routines (cron and job text, which `build.py` reads) and the travel-log Sheet |
+| `TEMPLATE-PACKAGE.md` | The package spec: keep line, description, skill list, memories, plugins, the routines (cron and job text, which `build.py` reads) and the travel-log Sheet |
 | `PACKAGING.md` | Which skills ship and which are excluded, with reasons |
 | `skills/<name>/SKILL.md` | The 17 skills as published (front matter `name` + `description`, then the body) |
 | `listing/` | Marketplace listing copy (`LISTING.md`) and `profile.json` (name, title, description) |
@@ -31,15 +31,16 @@ cd bot
 python3 build.py        # needs PyYAML
 ```
 
-`build.py` reads the 17 `skills/<name>/SKILL.md` files (front-matter `description` plus the body), the six routine
+`build.py` reads the 17 `skills/<name>/SKILL.md` files (front-matter `description` plus the body), the seven routine
 job texts out of `TEMPLATE-PACKAGE.md`, and its own inline copies of the plugins, memories and profile, then
 overwrites `create_bot_share_json.args.json`. It also prints the size and every match of its private-data pattern
 (owner names, emails, Mac paths, long opaque strings) so a leak shows up before the args are staged.
 
 The calendar review's routine slug is `calendar-review`, not `nomad-pro-calendar-review` as the other Nomad Pro
 slugs would suggest: that is the slug the published v6 card was staged with, so the args in this folder are now
-exactly what was staged. The other five slugs are `nomad-pro-check-in`, `weekly-travel-rules-watch`,
-`weekly-hmrc-guidance-watch`, `year-end-lockdown` and `monthly-records-backup`.
+exactly what was staged. The other published slugs are `nomad-pro-check-in`, `weekly-travel-rules-watch`,
+`weekly-hmrc-guidance-watch`, `year-end-lockdown` and `monthly-records-backup`; the v2.2 draft adds
+`nomad-pro-booking-inbox-check`.
 
 ## Size limit
 
@@ -63,6 +64,25 @@ section 4), so each of them opens with a `banned-list` start comment that exempt
 private-data check still runs over them.
 
 ## Changelog
+
+### v2.2 — draft, not staged or published
+
+* **Daily booking inbox check** (new routine `nomad-pro-booking-inbox-check`, daily 08:05 in the owner's timezone,
+  cron `5 8 * * *`). Packed **switched off**; `nomad-pro-getting-started` offers it once Gmail is connected, alongside
+  the other routines, and switches it on only on a yes. That yes is a standing permission: it reads Gmail
+  (read-only) for booking emails since the last run (60 days the first time), skips marketing and duplicates, and
+  files each one as a `Records` row plus a `Changes` row, Sheet first, then rebuilds and validates. It never adds a
+  day or sets a country; conflicts, and changes or cancellations of filed bookings, go to the owner. It messages only
+  when it filed something (one line per booking) or needs an answer. Every record it adds can be undone.
+* `evidence-and-documents`: on-demand Gmail matches still ask first; the routine works under the standing yes, and
+  "undo" removes a record with a `Changes` row. Smaller edits in `nomad-pro-getting-started` (offer and routine 7),
+  `nomad-pro-core-rules` (seven routines; day rows still only on the user's yes), `onboarding` ("How to use it"),
+  `export-travel-day-log` (`Profile` row) and memory 5 ("a day row").
+* **Making room.** The routine's detailed steps live in the engine, `reference/booking-inbox-check.md` (engine
+  0.1.6), and the `srt-explainer` checked answers moved, unchanged, to `reference/srt-checked-answers.md`; the
+  skill keeps the topic list and falls back to searching the HMRC pages. `docs/TRIM-LOG.md` has the detail.
+* Args 91,988 → 91,470 bytes (rule: 92,000). main's v2.1 args were 91,988 bytes by `build.py`'s measure, not the
+  91,911 this file said. Needs engine 0.1.6 on `main` and a restage to reach new installs.
 
 ### v2.1 — draft, not staged or published
 

@@ -50,6 +50,7 @@ Other overrides, mainly for testing: `NOMAD_PRO_REPO_URL`, `NOMAD_PRO_TARBALL_UR
 | schema/example-*.json | Fictional examples |
 | schema/country-rules.json / .md | Verified country-rules table with sources and dates |
 | example/ | Fictional per-user data folder: daylog.json, evidence/, documents/ (+ index.json), profile/ |
+| reference/ | Fixed files the bot template reads from the installed engine: `booking-inbox-check.md` (steps for the daily booking inbox check routine) and `srt-checked-answers.md` (the SRT explainer's checked answers). Never edited on the user's box |
 | templates/leaving-uk-checklist.md | Leaving-the-UK checklist, every GOV.UK link verified (date recorded) |
 | templates/arriving-uk-checklist.md | Arriving / returning variant |
 | tools/srt_engine.py | Counts: tax years, midnight rule, UK work days >3h, ties, Table A/B bands, proximity, Schengen 90/180, country limits, trip planning, validation; work-day rule (`apply_work_rule`, `work_rule_report`, `srt_engine.py work-rules`); result gate (`result_gate`, `gate_items`, `running_count`): a stage line only for a tax year that has ended with every day logged, prior-year residence recorded and every tie answered, otherwise the year so far and what is missing; the HMRC figures that apply to the year with the room left before each (`applicable_figures`); trip modelling with the days still available before the next UK figure and in the Schengen window (`uk_days_remaining`, `schengen_days_remaining`) |

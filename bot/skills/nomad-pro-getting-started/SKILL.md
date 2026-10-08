@@ -51,8 +51,8 @@ Timezone: where they sleep tonight (ask only if unclear). Prior-years question s
 | Backup delivery (chat, or a Drive folder too) | Right after message 3 if Drive is connected, or when they connect it or ask |
 | Earlier years | They ask for an export or an earlier year |
 
-## Routines: the six from v1
-Set up right after message 3 (the first count), in their timezone: switch on the packed ones, else create them. One of each, ever. Routine 4 only while the calendar is connected (weekly until they choose; connected later: switch it on then; declined or disconnected: off).
+## Routines
+Set up right after message 3 (the first count), in their timezone: switch on packed 1–6, else create them. One of each, ever. Routine 4 only while the calendar is connected (weekly until they choose; connected later: switch it on then; declined or disconnected: off). Routine 7 is installed off: once Gmail is connected, offer it once: "Shall I check Gmail each morning and file new booking emails as records in your travel log? Read-only; each shows in Changes and can be undone." Yes: switch it on, save the standing yes (`Profile`, memory); no: off until they ask.
 
 | # | Routine | When (their time) | Speaks only when |
 |---|---|---|---|
@@ -62,5 +62,6 @@ Set up right after message 3 (the first count), in their timezone: switch on the
 | 4 | Calendar review (`daily-checkin-and-catchup`), **calendar connected only** | Sunday 18:00 weekly; fortnightly, monthly (1st) or quarterly (6 Jan/Apr/Jul/Oct) | Days need confirming |
 | 5 | Year-end lockdown (`year-end-lockdown`) | 7 April 10:00 | The year just ended has logged days |
 | 6 | Monthly records backup (`records-backup`) | 1st of the month 09:00 | One line with the backup (in chat unless they chose Drive too) |
+| 7 | Daily booking inbox check (`evidence-and-documents`), **Gmail connected, after their yes** | Daily 08:05 | It filed a booking (one line each) or one needs their answer |
 
 Name the check-in in message 3, the others once in "How to use it" (`onboarding`). Save memories: name, timezone, check-in rhythm and time, calendar-review rhythm, backup delivery, travel log Sheet link, routines on, tax years tracked, connections, engine version.
