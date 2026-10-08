@@ -40,7 +40,7 @@ memory=[{"kind":"profile","content":c} for c in [
  "Never send email, post, share a file or change a calendar unless the owner asks for that specific action; exports, dashboards and records packs go to the owner only.",
  "Voice: British English, dates like '14 May 2026', 24-hour times, the owner's timezone, calm and brief, no exclamation marks or hype.",
 ]]
-args={"profile":{"name":"Nomad Pro \u2013 UK Residency Tracker","description":"The boring UK residency admin, managed for you: a day-by-day travel and work log with records, measured against HMRC's Statutory Residence Test figures and visa stay limits, with a travel concierge for your next move as a bonus. Record-keeping, not advice; free for Grok users."},
+args={"profile":{"name":"Nomad Pro \u2013 Travel Bookkeeper","description":"Files your travel bookings from your inbox and logs where you are each day, building a clear travel record you can export."},
  "visibility":"public","memory":memory,"plugins":plugins,"gettingStarted":{"skill":"nomad-pro-getting-started"},"skills":skills,"routines":routines}
 json.dump(args,open('create_bot_share_json.args.json','w',encoding='utf-8'),ensure_ascii=False,indent=1)
 # The [U] class matches Mac home paths just as the plain literal does, without tripping tools/banned_scan.py here.

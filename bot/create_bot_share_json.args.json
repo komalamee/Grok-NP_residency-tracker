@@ -1,7 +1,7 @@
 {
  "profile": {
-  "name": "Nomad Pro – UK Residency Tracker",
-  "description": "The boring UK residency admin, managed for you: a day-by-day travel and work log with records, measured against HMRC's Statutory Residence Test figures and visa stay limits, with a travel concierge for your next move as a bonus. Record-keeping, not advice; free for Grok users."
+  "name": "Nomad Pro – Travel Bookkeeper",
+  "description": "Files your travel bookings from your inbox and logs where you are each day, building a clear travel record you can export."
  },
  "visibility": "public",
  "memory": [

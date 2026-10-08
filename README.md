@@ -1,6 +1,6 @@
-# Nomad Pro – UK Residency Tracker (Grok Bot engine)
+# Nomad Pro – Travel Bookkeeper (Grok Bot engine)
 
-The engine behind the **Nomad Pro – UK Residency Tracker** Grok Bot template: the Python tools, schemas, templates, fictional example data and a local mirror of HMRC's Statutory Residence Test (SRT) guidance that the bot uses on each user's own Linux box.
+The engine behind the **Nomad Pro – Travel Bookkeeper** Grok Bot template: the Python tools, schemas, templates, fictional example data and a local mirror of HMRC's Statutory Residence Test (SRT) guidance that the bot uses on each user's own Linux box.
 
 A Grok Bot marketplace template can only carry prose (standing instructions, skills, routines). Everything that has to run lives here. On first use, each user's bot downloads this repo into `~/nomad-pro-engine` and runs the tools from there; the user's own records stay in a separate data folder (`~/nomad-pro-data/` by default) and never leave their box.
 

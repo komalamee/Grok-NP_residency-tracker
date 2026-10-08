@@ -6,8 +6,11 @@ Follow `export-bot-template` from inside the Nomad Pro bot (agent id kept out of
 ## Keep line (step 5, one short line before the call)
 "Keeping 17 Nomad Pro skills (getting started: nomad-pro-getting-started), the seven routines (calendar review whenever the calendar is connected; the booking inbox check switched off until the owner says yes), 8 general Nomad Pro memories, and four plugins it connects to: Google Sheets (travel log), Google Calendar and Gmail (read-only, to propose days and attach booking records) and Google Drive (backups and records); leaving out personal memories and the SEO and crypto skills."
 
+## Title
+Nomad Pro – Travel Bookkeeper
+
 ## Description (short)
-The boring UK residency admin, managed for you: a day-by-day travel and work log with records, measured against HMRC's Statutory Residence Test figures and visa stay limits, with a travel concierge for your next move as a bonus. Record-keeping, not advice; free for Grok users.
+Files your travel bookings from your inbox and logs where you are each day, building a clear travel record you can export.
 
 ## Example prompts
 1. I left the UK in March. Lisbon to June, then Bangkok.

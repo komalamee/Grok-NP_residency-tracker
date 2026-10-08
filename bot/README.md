@@ -1,4 +1,4 @@
-# Nomad Pro – UK Residency Tracker: the Grok Bot template (v2)
+# Nomad Pro – Travel Bookkeeper: the Grok Bot template (v2)
 
 This folder is the source of truth for the **bot** side of Nomad Pro: the prose the Grok Bot template carries
 (skills, routines, memories, plugins, listing copy) and the script that turns it into the arguments for
@@ -15,7 +15,7 @@ is not changed by anything in here; each user's bot installs it from `main` into
 
 | Path | What it is |
 |---|---|
-| `create_bot_share_json.args.json` | The arguments for the next staging (v2.2 draft: 91,470 bytes). Version 6 as published is this file at commit `606861e`. Generated; don't hand-edit |
+| `create_bot_share_json.args.json` | The arguments for the next staging (v2.2 draft with the retitle: 91,312 bytes). Version 6 as published is this file at commit `606861e`. Generated; don't hand-edit |
 | `build.py` | Builds those arguments from `skills/` and `TEMPLATE-PACKAGE.md` |
 | `TEMPLATE-PACKAGE.md` | The package spec: keep line, description, skill list, memories, plugins, the routines (cron and job text, which `build.py` reads) and the travel-log Sheet |
 | `PACKAGING.md` | Which skills ship and which are excluded, with reasons |
@@ -83,12 +83,18 @@ private-data check still runs over them.
   skill keeps the topic list and falls back to searching the HMRC pages. `docs/TRIM-LOG.md` has the detail.
 * Args 91,988 → 91,470 bytes (rule: 92,000). main's v2.1 args were 91,988 bytes by `build.py`'s measure, not the
   91,911 this file said. Needs engine 0.1.6 on `main` and a restage to reach new installs.
+* **Retitle (separate patch; wording not yet approved).** Title "Nomad Pro – Travel Bookkeeper" and short
+  description "Files your travel bookings from your inbox and logs where you are each day, building a clear travel
+  record you can export." in the args profile, `TEMPLATE-PACKAGE.md`, `listing/profile.json`, `listing/LISTING.md`
+  and both READMEs. No HMRC, tax or residency words in either; the listing body and the bot keep their HMRC
+  wording (the old pitch moves to "In more detail"). `listing/profile.json` now uses the en dash, as the args do,
+  and its `title` field becomes "Travel bookings and day log". Args 91,470 → 91,312 bytes.
 
 ### v2.1 — draft, not staged or published
 
 * **"Check my setup".** New `onboarding` section J (and its trigger in the `onboarding` description): one line each for the engine, travel log Sheet, Calendar, Gmail, Drive, routines and last backup, counts and links only, with what a failure stops and the fix. Also run once right after a connection is added.
 * **Dropped-connection heads-up.** `nomad-pro-core-rules` §9: when Calendar or Gmail worked and now fails, one line once in the next check-in (what it stops, and 'Reconnect it, then say "check my setup".'), no repeat until it works again, so routines don't go quiet unnoticed.
-* Args 91,338 → 91,911 bytes (rule: 92,000). Needs a restage from the bot that owns the listing to reach new installs.
+* Args 91,338 → 91,988 bytes (rule: 92,000). Needs a restage from the bot that owns the listing to reach new installs.
 
 ### v2 — published 28 September 2026 (template version 6)
 

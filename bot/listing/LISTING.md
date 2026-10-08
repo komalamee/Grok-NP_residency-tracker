@@ -1,9 +1,12 @@
 # Marketplace listing (draft v2d, 28 Sep 2026)
 
 ## Name
-Nomad Pro - UK Residency Tracker
+Nomad Pro – Travel Bookkeeper
 
 ## Pitch
+Files your travel bookings from your inbox and logs where you are each day, building a clear travel record you can export.
+
+## In more detail
 The boring UK residency admin, managed for you: a day-by-day travel and work log with records, measured against HMRC's Statutory Residence Test figures and visa stay limits, with a travel concierge for your next move as a bonus. Record-keeping, not advice; free for Grok users.
 
 ## What it does
