@@ -2,6 +2,13 @@
 
 Versions of the Nomad Pro engine (`VERSION`). Newest first.
 
+## 0.1.7
+
+* `reference/booking-inbox-check.md`: the booking inbox check runs **weekly on Mondays at 08:05** in the owner's
+  timezone (cron `5 8 * * 1`), not daily. Title, Profile item names and `Changes` Via text say "weekly"; the
+  Gmail search window since the last run (60 days on the first run) is unchanged.
+* No tool, schema or test changes.
+
 ## 0.1.6
 
 * New `reference/` folder: fixed files the bot template reads from the installed engine, so detailed steps don't

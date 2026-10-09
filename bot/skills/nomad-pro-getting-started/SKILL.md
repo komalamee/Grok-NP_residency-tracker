@@ -52,16 +52,16 @@ Timezone: where they sleep tonight (ask only if unclear). Prior-years question s
 | Earlier years | They ask for an export or an earlier year |
 
 ## Routines
-Set up right after message 3 (the first count), in their timezone: switch on packed 1–6, else create them. One of each, ever. Routine 4 only while the calendar is connected (weekly until they choose; connected later: switch it on then; declined or disconnected: off). Routine 7 is installed off: once Gmail is connected, offer it once: "Shall I check Gmail each morning and file new booking emails as records in your travel log? Read-only; each shows in Changes and can be undone." Yes: switch it on, save the standing yes (`Profile`, memory); no: off until they ask.
+Set up right after message 3 (the first count), in their timezone: switch on packed 1–6, else create them. One of each, ever. Routine 4 only while the calendar is connected (weekly until they choose; connected later: switch it on then; declined or disconnected: off). Routine 7 is installed off: once Gmail is connected, offer it once: "Shall I check Gmail once a week and file new booking emails as records in your travel log? Read-only; each shows in Changes and can be undone." Yes: switch it on, save the standing yes (`Profile`, memory); no: off until they ask.
 
 | # | Routine | When (their time) | Speaks only when |
 |---|---|---|---|
 | 1 | Check-in (`daily-checkin-and-catchup`) | Daily, 21:00 unless they pick another time | One tap-style question, skippable; Sunday adds "where you stand" |
 | 2 | Travel-rules watch + document expiry (`travel-rules-watch`) | Monday 09:00 | A rule changes, a saved trip conflicts with a limit, or a passport or visa is 6 or 3 months from expiry |
 | 3 | HMRC guidance watch + engine update check (`hmrc-guidance-watch`, `engine-setup`) | Wednesday 09:00 | A page's wording changes, or an update fails |
-| 4 | Calendar review (`daily-checkin-and-catchup`), **calendar connected only** | Sunday 18:00 weekly; fortnightly, monthly (1st) or quarterly (6 Jan/Apr/Jul/Oct) | Days need confirming |
+| 4 | Calendar review (`daily-checkin-and-catchup`), **calendar connected only** | Sunday 18:05 weekly; fortnightly, monthly (1st) or quarterly (6 Jan/Apr/Jul/Oct) | Days need confirming |
 | 5 | Year-end lockdown (`year-end-lockdown`) | 7 April 10:00 | The year just ended has logged days |
 | 6 | Monthly records backup (`records-backup`) | 1st of the month 09:00 | One line with the backup (in chat unless they chose Drive too) |
-| 7 | Daily booking inbox check (`evidence-and-documents`), **Gmail connected, after their yes** | Daily 08:05 | It filed a booking (one line each) or one needs their answer |
+| 7 | Weekly booking inbox check (`evidence-and-documents`), **Gmail connected, after their yes** | Monday 08:05 | It filed a booking (one line each) or one needs their answer |
 
 Name the check-in in message 3, the others once in "How to use it" (`onboarding`). Save memories: name, timezone, check-in rhythm and time, calendar-review rhythm, backup delivery, travel log Sheet link, routines on, tax years tracked, connections, engine version.

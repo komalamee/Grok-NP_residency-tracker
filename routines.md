@@ -22,7 +22,7 @@ Create these routines at the end of onboarding (routine 4 only if Google Calenda
 
 ## 4. End-of-week calendar review (only if Google Calendar is connected)
 
-* **Schedule:** weekly, Sunday 18:00 local (or the user's chosen day and time). Skip a week if every day of it is already logged and has a link or pointer, and say nothing.
+* **Schedule:** weekly, Sunday 18:05 local (or the user's chosen day and time). Skip a week if every day of it is already logged and has a link or pointer, and say nothing.
 * **Prompt (intent):**
   > Using the end-of-week calendar review in the daily-checkin-and-catchup skill, read my calendar (and Gmail, if connected) for the week just ended and any unlogged days before it. Send me one message: "Here's what I think your week was. Is this right?" with one line per night (date, country and place, and what it's based on), and show the UK work each UK day gets under my agreed work-day rule, asking me only about exceptions (with no rule, ask about UK work over 3 hours; unanswered UK days stay unsure). Go back and forth with me until every line is confirmed or corrected. Record confirmed days, log every correction to an existing day in its change log with my words as the reason, record the review in weekly_reviews, and attach the calendar or email links I approve as evidence. Leave anything I can't place as not logged; never guess.
 
