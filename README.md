@@ -6,6 +6,8 @@ A Grok Bot marketplace template can only carry prose (standing instructions, ski
 
 **The published bot template lives in [bot/](bot/README.md).** That folder holds v2 as published on 28 September 2026 ([x.ai/bot/A5PJWWubWq6RSITiu_tdG](https://x.ai/bot/A5PJWWubWq6RSITiu_tdG)): the 17 skills, the `create_bot_share_json` arguments, `build.py` that regenerates them, the listing copy and the packaging notes. The root `skills/`, `routines.md`, `LISTING.md` and `SYSTEM.md` below are the older v1-era copies that shipped with the engine; `bot/` supersedes them for anything the published bot does.
 
+**v2.2 (bot template draft):** the booking inbox check routine runs weekly on Mondays at 08:05 in the owner's timezone (`5 8 * * 1`), not daily; engine **0.1.7** updates `reference/booking-inbox-check.md` so installs pull the new schedule on the weekly engine update. Calendar review prose now says **18:05** to match cron `5 18 * * 0`.
+
 ## What it is, and what it is not
 
 Nomad Pro is a **record-keeping** tool. It keeps a dated day-by-day log of where someone was at midnight, whether they worked in the UK for more than 3 hours, and where the supporting records sit; it counts those days against the figures HMRC publishes for the SRT and against visa and stay limits abroad; and it produces a dashboard, a "Travel and day log" PDF/CSV and a records pack.
@@ -50,7 +52,7 @@ Other overrides, mainly for testing: `NOMAD_PRO_REPO_URL`, `NOMAD_PRO_TARBALL_UR
 | schema/example-*.json | Fictional examples |
 | schema/country-rules.json / .md | Verified country-rules table with sources and dates |
 | example/ | Fictional per-user data folder: daylog.json, evidence/, documents/ (+ index.json), profile/ |
-| reference/ | Fixed files the bot template reads from the installed engine: `booking-inbox-check.md` (steps for the daily booking inbox check routine) and `srt-checked-answers.md` (the SRT explainer's checked answers). Never edited on the user's box |
+| reference/ | Fixed files the bot template reads from the installed engine: `booking-inbox-check.md` (steps for the weekly booking inbox check routine) and `srt-checked-answers.md` (the SRT explainer's checked answers). Never edited on the user's box |
 | templates/leaving-uk-checklist.md | Leaving-the-UK checklist, every GOV.UK link verified (date recorded) |
 | templates/arriving-uk-checklist.md | Arriving / returning variant |
 | tools/srt_engine.py | Counts: tax years, midnight rule, UK work days >3h, ties, Table A/B bands, proximity, Schengen 90/180, country limits, trip planning, validation; work-day rule (`apply_work_rule`, `work_rule_report`, `srt_engine.py work-rules`); result gate (`result_gate`, `gate_items`, `running_count`): a stage line only for a tax year that has ended with every day logged, prior-year residence recorded and every tie answered, otherwise the year so far and what is missing; the HMRC figures that apply to the year with the room left before each (`applicable_figures`); trip modelling with the days still available before the next UK figure and in the Schengen window (`uk_days_remaining`, `schengen_days_remaining`) |

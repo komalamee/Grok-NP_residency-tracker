@@ -55,7 +55,7 @@ Keep new prose inside that budget, and re-run `build.py` to see the byte count.
 python3 tools/banned_scan.py bot/skills     # 0 banned-phrase hits, 0 private-data hits
 python3 tools/banned_scan.py bot/listing    # 0 and 0
 python3 tools/banned_scan.py .              # whole repo, 0 and 0
-python3 -m unittest discover -s tools/tests # 115 tests, OK
+python3 -m unittest discover -s tools/tests # 132 tests, OK
 ```
 
 The published prose (skills, listing, args) is clean. The working notes in `docs/`, along with `PACKAGING.md` and
@@ -67,8 +67,8 @@ private-data check still runs over them.
 
 ### v2.2 — draft, not staged or published
 
-* **Daily booking inbox check** (new routine `nomad-pro-booking-inbox-check`, daily 08:05 in the owner's timezone,
-  cron `5 8 * * *`). Packed **switched off**; `nomad-pro-getting-started` offers it once Gmail is connected, alongside
+* **Weekly booking inbox check** (new routine `nomad-pro-booking-inbox-check`, Mondays at 08:05 in the owner's timezone,
+  cron `5 8 * * 1`). Packed **switched off**; `nomad-pro-getting-started` offers it once Gmail is connected, alongside
   the other routines, and switches it on only on a yes. That yes is a standing permission: it reads Gmail
   (read-only) for booking emails since the last run (60 days the first time), skips marketing and duplicates, and
   files each one as a `Records` row plus a `Changes` row, Sheet first, then rebuilds and validates. It never adds a
@@ -79,7 +79,7 @@ private-data check still runs over them.
   `nomad-pro-core-rules` (seven routines; day rows still only on the user's yes), `onboarding` ("How to use it"),
   `export-travel-day-log` (`Profile` row) and memory 5 ("a day row").
 * **Making room.** The routine's detailed steps live in the engine, `reference/booking-inbox-check.md` (engine
-  0.1.6), and the `srt-explainer` checked answers moved, unchanged, to `reference/srt-checked-answers.md`; the
+  0.1.7 for the weekly Monday schedule; 0.1.6 introduced the routine), and the `srt-explainer` checked answers moved, unchanged, to `reference/srt-checked-answers.md`; the
   skill keeps the topic list and falls back to searching the HMRC pages. `docs/TRIM-LOG.md` has the detail.
 * Args 91,988 → 91,470 bytes (rule: 92,000). main's v2.1 args were 91,988 bytes by `build.py`'s measure, not the
   91,911 this file said. Needs engine 0.1.6 on `main` and a restage to reach new installs.
@@ -89,6 +89,7 @@ private-data check still runs over them.
   and both READMEs. No HMRC, tax or residency words in either; the listing body and the bot keep their HMRC
   wording (the old pitch moves to "In more detail"). `listing/profile.json` now uses the en dash, as the args do,
   and its `title` field becomes "Travel bookings and day log". Args 91,470 → 91,312 bytes.
+* **Weekly inbox schedule; calendar review time.** The booking inbox check runs weekly on Mondays at 08:05 (`5 8 * * 1`), not daily; calendar review prose says 18:05 to match cron `5 18 * * 0`. Engine **0.1.7** updates `reference/booking-inbox-check.md` for installs on the weekly engine update.
 
 ### v2.1 — draft, not staged or published
 

@@ -1,14 +1,14 @@
-# Daily booking inbox check: the procedure
+# Weekly booking inbox check: the procedure
 
 This file is part of the Nomad Pro engine. The routine `nomad-pro-booking-inbox-check` reads it from
-`~/nomad-pro-engine/reference/booking-inbox-check.md` each run (engine 0.1.6 or later). Never edit the
+`~/nomad-pro-engine/reference/booking-inbox-check.md` each run (engine 0.1.7 or later). Never edit the
 installed copy; updates arrive with the weekly engine update. The bot's own skills come first: if this file and
 `nomad-pro-core-rules`, `evidence-and-documents` or `export-travel-day-log` ever disagree, follow the skills.
 
 ## 0. Before anything
 * **Switched off when installed.** It runs only after the owner said yes to the offer in
   `nomad-pro-getting-started` (that yes is the standing permission to file records without asking each time).
-  The yes is a `Profile` row (Section "Routines", Item "Daily booking inbox check", Value "On", Agreed on the
+  The yes is a `Profile` row (Section "Routines", Item "Weekly booking inbox check", Value "On", Agreed on the
   date) and is saved in memory. "Stop the inbox check" or "pause it" switches it off: Value "Off", nothing else
   changes. "Change the time" updates the existing routine; never a second one.
 * Send nothing and change nothing if it is off, Gmail is not connected, there is no travel log yet, or this file
@@ -71,7 +71,7 @@ For each booking to file, in this order:
    for a journey or boarding card, "Email" for a check-in reminder or a change; Description short (provider,
    kind, city, dates; no address or booking reference); File or link = the Gmail message link.
 2. **`Changes` row:** Day changed = the Record ID; Field "Record added"; From blank; To the Description; Via
-   "Daily booking inbox check"; Reason "Booking email from <provider>, received <date>"; Changed at now.
+   "Weekly booking inbox check"; Reason "Booking email from <provider>, received <date>"; Changed at now.
 3. Add the booking to `filed` in the state file.
 4. Update the log-only Records cell of each proved day that is already logged. Nothing else on `Days` changes.
 5. Rebuild `daylog.json` from the Sheet. Each logged day it proves gets the record in `evidence[]`

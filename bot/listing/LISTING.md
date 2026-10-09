@@ -16,11 +16,11 @@ The boring UK residency admin, managed for you: a day-by-day travel and work log
 - **"What if" before you book.** Your count now and with the trip.
 - **Watches the rules.** HMRC guidance and GOV.UK entry rules, weekly; silent unless something changes.
 - **All your data in one Sheet.** Days, records, trips, changes and every export in one Google Sheet, "Nomad Pro – Travel log". Edit it any time; every PDF names the rows it came from.
-- **Files your bookings.** Switch on the daily inbox check and it files new booking emails from Gmail as records for your days. Read-only, and each one can be undone.
+- **Files your bookings.** Switch on the weekly inbox check and it files new booking emails from Gmail as records for your days, on Mondays at 08:05 in your timezone. Read-only, and each one can be undone.
 - **Files for your accountant.** PDF and CSV per tax year, plus a dashboard.
 
 ## On from day one
-The check-in, both weekly watches, a monthly records backup and the 7 April year-end lockdown, plus a calendar review once your calendar is connected. The daily booking inbox check stays off until you say yes. Say "stop" or "change time" any time.
+The check-in, both weekly watches, a monthly records backup and the 7 April year-end lockdown, plus a calendar review once your calendar is connected. The weekly booking inbox check stays off until you say yes. Say "stop" or "change time" any time.
 
 ## Who it's for
 Anyone abroad who watches their UK time. Mostly British nomads and expats; any passport works.
