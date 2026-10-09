@@ -2,6 +2,20 @@
 
 Versions of the Nomad Pro engine (`VERSION`). Newest first.
 
+## 0.1.6
+
+* New `reference/` folder: fixed files the bot template reads from the installed engine, so detailed steps don't
+  have to fit in the template's size limit. The bot never edits them; they update with the weekly engine update.
+  * `reference/booking-inbox-check.md`: the steps for the template's daily booking inbox check routine (v2.2
+    draft): read-only Gmail search since the last run (60 days on the first run), skip marketing and duplicates
+    (message id, booking reference, or provider and dates), file each booking as a `Records` row plus a `Changes`
+    row, Sheet first, then rebuild and `validate`. It never adds a day or sets a country; conflicts, and changes or
+    cancellations of filed bookings, go to the owner. One message only when something was filed or needs an
+    answer. Every record it adds can be undone.
+  * `reference/srt-checked-answers.md`: the `srt-explainer` checked answers (GP register, transit, 90-day tie and
+    others), moved out of the skill unchanged.
+* No tool, schema or test changes.
+
 ## 0.1.5
 
 * New default dashboard design: the tabbed SRT Residency dashboard (`tools/srt_dashboard.py`, page shell

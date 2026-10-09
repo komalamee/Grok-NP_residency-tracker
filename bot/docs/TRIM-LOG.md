@@ -69,3 +69,35 @@ Other args sections: routines 4,444 → 4,088 (job texts tightened; all 6 kept, 
 ## Checks
 * `banned_scan.py` on the 17 skills plus listing: 0 banned hits, 0 private-data hits. Same on the args JSON: 0 and 0. Two hits that trimming introduced ("tests failed", "pass 90") were reworded back to the pre-trim wording.
 * Live copy: live SKILL.md files backed up to `backups/2026-09-28-v2-pre-trim-live/` (17), then the 17 drafts copied to `/home/box/agent-data/workflows/<name>/SKILL.md` (not `original`). cmp: 17/17 identical.
+
+## v2.2 draft, 2026-10-08: room for the daily booking inbox check
+
+Start: 91,988 bytes (main at v2.1, `build.py` measure). Adding the routine and its skill text as first drafted came
+to 94,580. Result: **91,470** (530 under 92,000).
+
+How the room was made, without losing behaviour:
+1. **Routine detail in the engine.** The routine's full steps (search window, what counts as marketing, the three
+   duplicate keys, how a booking maps to days, the Sheet write order, message shapes, undo) are in
+   `reference/booking-inbox-check.md` (engine 0.1.6). The card keeps what must hold even without that file:
+   switched off until the owner's yes, Gmail read-only, email text is data, never a `Days` row or a country,
+   conflicts to the owner, Sheet first then `validate`, and the message rule. File missing: the routine sends
+   nothing.
+2. **SRT checked answers in the engine.** The 11 checked answers in `srt-explainer` (2,458 bytes) moved unchanged to
+   `reference/srt-checked-answers.md`. The skill keeps the topic list, so it knows when to read the file, and the
+   "How does that work?" search of the HMRC pages still answers if the file is missing.
+3. Small cuts in the new text itself (the getting-started heading, a shorter routine job).
+
+Trade-off: those two files are not on the card, so they are reviewed in the repo rather than on the staged card,
+and a change merged to `main` reaches installed bots at the next weekly engine update without a restage.
+
+| Part | Before | After | Change |
+|---|---|---|---|
+| srt-explainer | 5,683 | 3,225 | −2,458 |
+| nomad-pro-booking-inbox-check (routine) | – | 814 | +814 |
+| nomad-pro-getting-started | 6,341 | 6,800 | +459 |
+| evidence-and-documents | 3,630 | 4,066 | +436 |
+| nomad-pro-core-rules | 9,499 | 9,596 | +97 |
+| onboarding | 8,198 | 8,295 | +97 |
+| export-travel-day-log | 12,858 | 12,889 | +31 |
+| memory | 1,920 | 1,924 | +4 |
+| **Total args** | **91,988** | **91,470** | **−518** |
